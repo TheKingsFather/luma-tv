@@ -137,11 +137,25 @@ public final class MainActivity extends Activity {
     private Drawable rounded(int color,int radius){GradientDrawable d=new GradientDrawable();d.setColor(color);d.setCornerRadius(g.u(radius));return d;}
 
     private void header(String selected){
-        brand();LinearLayout nav=g.row();g.material(nav,30);g.pad(nav,7,6);
-        for(String item:new String[]{"Home","Movies","Series","Live","Library"}){TextView b=g.button(item,false,()->showHome(item));b.setTextSize(android.util.TypedValue.COMPLEX_UNIT_PX,g.u(14));b.setMinHeight(0);b.setPadding(g.u(17),g.u(10),g.u(17),g.u(10));if(item.equals(selected)){b.setTextColor(Glass.MINT);b.setBackground(g.panel(22,true));navFocus=b;}nav.addView(b,new LinearLayout.LayoutParams(-2,g.u(42)));}
-        g.at(root,nav,420,54,430,28);
-        TextView search=g.button("⌕",false,this::showSearch);search.setTextSize(android.util.TypedValue.COMPLEX_UNIT_PX,g.u(25));search.setPadding(0,0,0,0);search.setContentDescription("Search");g.at(root,search,50,50,1058,30);
+        LinearLayout nav=g.row();g.material(nav,30);g.pad(nav,10,6);
+        FrameLayout search=headerControl("Search","search",false,this::showSearch);
+        nav.addView(search,new LinearLayout.LayoutParams(g.u(48),g.u(44)));g.gap(nav,8);
+        for(String item:new String[]{"Home","Movies","Series","Live","Library"}){
+            FrameLayout tab=headerControl(item,null,item.equals(selected),()->showHome(item));
+            nav.addView(tab,new LinearLayout.LayoutParams(0,g.u(44),1));
+            if(item.equals(selected))navFocus=tab;
+        }
+        g.at(root,nav,620,56,330,28);
         TextView settings=g.button("⚙",false,this::showSettings);settings.setTextSize(android.util.TypedValue.COMPLEX_UNIT_PX,g.u(22));settings.setPadding(0,0,0,0);settings.setContentDescription("Settings and account");g.at(root,settings,50,50,1122,30);
+    }
+    private FrameLayout headerControl(String label,String icon,boolean selected,Runnable action){
+        FrameLayout control=new FrameLayout(this);g.focus(control,24,null);control.setBackground(null);control.setContentDescription(label);control.setOnClickListener(v->action.run());
+        TextView text=icon==null?g.text(label,18,selected?Glass.MINT:Glass.MUTED,false):null;
+        if(text!=null){text.setGravity(Gravity.CENTER);text.setSingleLine(true);control.addView(text,new FrameLayout.LayoutParams(-1,g.u(36)));}
+        else{View glyph=g.icon(icon,Glass.WHITE,22);FrameLayout.LayoutParams p=new FrameLayout.LayoutParams(g.u(22),g.u(22),Gravity.CENTER);control.addView(glyph,p);}
+        if(selected){View dot=new View(this);dot.setBackground(rounded(Glass.MINT,2));FrameLayout.LayoutParams p=new FrameLayout.LayoutParams(g.u(4),g.u(4),Gravity.BOTTOM|Gravity.CENTER_HORIZONTAL);p.bottomMargin=g.u(4);control.addView(dot,p);}
+        control.setOnFocusChangeListener((v,focused)->{v.setBackground(focused?g.panel(24,true):null);v.setElevation(focused?g.u(8):0);if(text!=null)text.setTextColor(selected?Glass.MINT:focused?Glass.WHITE:Glass.MUTED);});
+        return control;
     }
     private void showHome(String selected){
         if(!selected.equals(homeTab))invalidateBrowse();
@@ -285,7 +299,7 @@ public final class MainActivity extends Activity {
         TextView language=g.button("Audio language: "+app.settings.getString("audioLanguage","en"),false,()->new AlertDialog.Builder(this).setTitle("Preferred audio language").setItems(new String[]{"English","French","Spanish","German","Portuguese","Hindi","Italian"},(d,index)->{app.settings.edit().putString("audioLanguage",new String[]{"en","fr","es","de","pt","hi","it"}[index]).apply();showSettings();}).show());prefs.addView(language,new LinearLayout.LayoutParams(-1,g.u(47)));g.spacer(prefs,11);
         prefs.addView(g.button("View connected add-ons",false,this::showAddons),new LinearLayout.LayoutParams(-1,g.u(47)));
         g.at(root,prefs,595,356,590,207);
-        TextView note=g.text("Luma TV  0.4.0   ·   Glass, made for your big screen.",13,Glass.MUTED,false);g.at(root,note,1000,26,58,612);footer("Add or configure providers in Stremio on your phone, then refresh them here.");connect.requestFocus();
+        TextView note=g.text("Luma TV  0.4.1   ·   Glass, made for your big screen.",13,Glass.MUTED,false);g.at(root,note,1000,26,58,612);footer("Add or configure providers in Stremio on your phone, then refresh them here.");connect.requestFocus();
     }
     private void toggle(LinearLayout parent,String name,String key,boolean fallback){boolean enabled=app.settings.getBoolean(key,fallback);TextView button=g.button(name+"    "+(enabled?"On":"Off"),false,()->{app.settings.edit().putBoolean(key,!enabled).apply();showSettings();});button.setGravity(Gravity.CENTER_VERTICAL);button.setTextSize(android.util.TypedValue.COMPLEX_UNIT_PX,g.u(14));parent.addView(button,new LinearLayout.LayoutParams(-1,g.u(47)));g.spacer(parent,11);}
     private void showAddons(){newScreen();page="Addons";brand();TextView back=g.button("←  Settings",false,this::showSettings);g.at(root,back,165,46,1063,30);g.at(root,g.text("Your connected add-ons",36,Glass.WHITE,true),1100,56,54,115);g.at(root,g.text("Manage them in Stremio. Refresh here to bring your changes across.",15,Glass.MUTED,false),1100,30,56,176);ScrollView scroller=new ScrollView(this);LinearLayout list=g.column();g.pad(list,56,12);scroller.addView(list);g.at(root,scroller,1280,433,0,225);for(Addon a:app.addons){LinearLayout box=g.column();g.pad(box,22,18);g.material(box,20);box.addView(g.text(a.name,21,Glass.WHITE,true));g.spacer(box,8);box.addView(g.text(text(a.manifest,"description"),14,Glass.MUTED,false));list.addView(box);g.spacer(list,14);}back.requestFocus();}

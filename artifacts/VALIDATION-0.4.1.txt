@@ -1,0 +1,24 @@
+Luma TV 0.4.1 — browse header update (2026-11-09)
+
+Change:
+- Removed repeated Luma branding from the browse header.
+- Centered a wider glass navigation bar, with Search inside it.
+- Used equal-width section tabs and a mint dot for the active section.
+- Preserved a visible remote-focus highlight and the top-right Settings button.
+
+Validation:
+- Official Gradle :app:assembleRelease and :app:lintRelease passed (JDK 21,
+  Android SDK 34, offline dependency cache); see build-0.4.1.log.
+- APK signature verified; certificate SHA-256 matches 0.4.0:
+  98de42adaee0e1c6178bffaecd6dc18e301fa8cd6de14bed087c8ac78db032f2
+- Xiaomi TV: adb install -r succeeded, package tv.luma reports version code 5,
+  version name 0.4.1, and MainActivity launched successfully.
+- On-device screenshot visually checked. Accessibility bounds show five
+  adjacent, equal-width tabs (163–164 px at 1920x1080), all inside the capsule.
+- D-pad traversed Home, Movies, Series, Live, Library and Settings.
+- Opened Settings and returned to browse; traversed left to Search, opened its
+  input screen and returned to Home. No settings/account changes were made.
+- No tv.luma fatal exception appeared in the inspected crash buffer.
+
+Existing JVM and poster/exit instrumentation suites were not rerun for this
+header-only layout change. Personal TV screenshots remain outside the repo.

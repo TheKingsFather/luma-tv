@@ -1,8 +1,17 @@
 # Luma TV
 
-A native Android TV client with an iOS-inspired glass interface and Stremio QR pairing. Version **0.4.0**. Package: `tv.luma`. Android 8.0+ (API 26), landscape, D-pad remote.
+A native Android TV client with an iOS-inspired glass interface and Stremio QR pairing. Version **0.4.1**. Package: `tv.luma`. Android 8.0+ (API 26), landscape, D-pad remote.
 
 Source: [TheKingsFather/luma-tv](https://github.com/TheKingsFather/luma-tv) (private).
+
+## New in 0.4.1
+
+The browse header uses one wider, centered glass bar with Search inside it and
+five evenly spaced section tabs. The active section has a mint dot, and remote
+focus highlights the whole tab. The browse header no longer repeats the Luma
+logo. Settings remains available at the top right.
+
+Install with `adb install -r artifacts/Luma-TV-0.4.1.apk`.
 
 ## New in 0.4.0
 
@@ -69,7 +78,7 @@ Install:
 
 ```bash
 adb connect 192.168.1.8:5555
-adb -s 192.168.1.8:5555 install -r artifacts/Luma-TV-0.4.0.apk
+adb -s 192.168.1.8:5555 install -r artifacts/Luma-TV-0.4.1.apk
 ```
 
 ## Implementation map
@@ -90,6 +99,12 @@ adb -s 192.168.1.8:5555 install -r artifacts/Luma-TV-0.4.0.apk
 The background image pipeline gives backdrops their own workers and only schedules visible poster cards. Retained browse pages own their asynchronous catalog callbacks: requests may finish on a detached page without replacing the active screen. Switching sections invalidates those pages, and late results are discarded. Other screens use a screen generation token to drop stale callbacks. Progress writes are serialized and retained locally when the server is unavailable. Subtitle requests use a separate data source so video-provider request headers are not forwarded to subtitle hosts.
 
 ## Validation
+
+For 0.4.1, the release build and Android release lint passed. On the Xiaomi TV,
+the header's equal tab widths and spacing were checked visually and through
+accessibility bounds. D-pad traversal, opening Search and Settings, and returning
+to browse passed. The APK retains the existing signing certificate and was
+installed with `adb install -r`. See `artifacts/VALIDATION-0.4.1.txt`.
 
 For 0.4.0, the Gradle release build, all **37 JVM checks** and Android lint
 passed. All **six PosterExitUiTest checks passed on the Xiaomi TV running
