@@ -1,0 +1,14 @@
+.gradle/
+local.properties
+**/build/
+artifacts/*.png
+*.keystore
+*.jks
+*.key
+*.pem
+*.apk.idsig
+.env
+.env.*
+**/captures/
+artifacts/*ui.xml
+artifacts/*host.log

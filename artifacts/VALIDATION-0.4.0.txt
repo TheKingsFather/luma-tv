@@ -1,0 +1,37 @@
+Luma TV Android 0.4.0 (version code 4) — 9 November 2026
+
+Movie/series cards now use a 350 ms D-pad focus delay and a 220 ms width
+animation, with steady artwork height. Previews use landscape/backdrop artwork,
+logo/title, year and rating. Horizontal rows reveal the expanded card; catalog
+grids retain their slots and raise a clamped preview. Landscape/Live cards
+retain their dimensions. Image downloads remain off the UI thread and are
+requested at stable decode sizes. Detached cards cancel their pending animation.
+
+The exit confirmation uses Luma's logo, teal/violet rounded panel, matching
+buttons and dimmed background. Stay is selected initially. Back cancels; exit
+only runs after explicit confirmation. Both Home and pairing exit paths use it.
+
+Validation:
+- Official Gradle release/debug/test builds passed with JDK 17 and SDK 34.
+- All 37 JVM checks passed; Android lint passed.
+- All six PosterExitUiTest checks passed on the Xiaomi A65 Pro / Android 14.
+  These cover delayed focus expansion and collapse, rapid focus changes,
+  landscape sizes, horizontal scrolling, grid-slot bounds, default Stay,
+  Back cancellation and explicit exit.
+- UI fixtures run on a debug-only activity and do not alter the owner's
+  account, library, provider configuration or preferences.
+- The two fixture screenshots were captured from the actual TV and visually
+  inspected. They contain generated artwork, not personal viewing data.
+- The emulator failed during startup; the existing connected-account-sensitive
+  NavigationPlaybackTest suite was not run on the owner's TV.
+- The installed 0.3.0 APK, debug fixture build and final 0.4.0 release APK were
+  verified to share the same signing certificate before an in-place update.
+- Package checks passed: ZIP CRCs, uncompressed/aligned resource table, retained
+  library/resource inventory and unique DEX classes. The debug fixture activity
+  is absent from the release APK.
+- The final release reported version code 4 / version 0.4.0 and MainActivity
+  resumed successfully on the TV. The existing Stremio connection was visible
+  after the update.
+
+The final release APK is artifacts/Luma-TV-0.4.0.apk, with SHA-256 in
+artifacts/SHA256SUMS-0.4.0. Account data was preserved by installing with -r.
