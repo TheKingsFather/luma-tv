@@ -1,6 +1,7 @@
 package tv.luma;
 
 import android.app.Instrumentation;
+import android.app.Dialog;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.view.*;
@@ -81,6 +82,24 @@ public class NavigationPlaybackTest {
     }
     @Test public void leavingAppPausesAndResumesOnlyPreviouslyPlayingVideo()throws Exception{
         open();live();playFixture();onMain(()->{PlayerPanel panel=(PlayerPanel)field(activity,"playerPanel");panel.onStop();assertFalse(engine().getPlayWhenReady());panel.onResume();assertTrue(engine().getPlayWhenReady());engine().pause();panel.onStop();panel.onResume();assertFalse(engine().getPlayWhenReady());activity.stopPlayer();assertNull(field(activity,"playerPanel"));});
+    }
+    private Dialog playerDialog(){List<?> list=(List<?>)field(field(activity,"playerPanel"),"dialogs");return (Dialog)list.get(list.size()-1);}
+    private void choose(Dialog dialog,String label){View text=find(dialog.getWindow().getDecorView(),label);assertNotNull(text);View target=text;while(!target.isClickable()&&target.getParent() instanceof View)target=(View)target.getParent();assertTrue(target.isClickable());target.performClick();}
+    @Test public void nestedPlayerSubtitlesKeepDialogStateAndDoNotRestartPlayback()throws Exception{
+        open();live();playFixture();AtomicReference<ExoPlayer> original=new AtomicReference<>();AtomicReference<Dialog> parent=new AtomicReference<>();
+        onMain(()->{original.set(engine());engine().pause();Object panel=field(activity,"playerPanel");invoke(panel,"trackMenu",new Class<?>[]{});parent.set(playerDialog());choose(parent.get(),"Embedded subtitles");});
+        waitFor(()->!parent.get().isShowing()&&playerDialog().isShowing());
+        onMain(()->{Object panel=field(activity,"playerPanel");assertTrue((Boolean)field(panel,"dialogOpen"));assertTrue(playerDialog() instanceof GlassDialog);choose(playerDialog(),"Off");});
+        waitFor(()->!(Boolean)field(field(activity,"playerPanel"),"dialogOpen"));
+        onMain(()->{assertSame(original.get(),engine());assertFalse(engine().getPlayWhenReady());assertTrue(engine().getTrackSelectionParameters().disabledTrackTypes.contains(androidx.media3.common.C.TRACK_TYPE_TEXT));});
+    }
+    @Test public void playerSourceAndSleepMenusCancelCleanlyAndReleaseDismissesOpenMenus()throws Exception{
+        open();live();playFixture();AtomicReference<ExoPlayer> original=new AtomicReference<>();AtomicReference<Dialog> last=new AtomicReference<>();
+        onMain(()->{engine().pause();original.set(engine());invoke(field(activity,"playerPanel"),"sourceMenu",new Class<?>[]{});assertTrue(playerDialog() instanceof GlassDialog);playerDialog().cancel();});
+        waitFor(()->!(Boolean)field(field(activity,"playerPanel"),"dialogOpen"));
+        onMain(()->{assertSame(original.get(),engine());assertFalse(engine().getPlayWhenReady());invoke(field(activity,"playerPanel"),"sleepMenu",new Class<?>[]{});choose(playerDialog(),"In 30 minutes");});
+        waitFor(()->!(Boolean)field(field(activity,"playerPanel"),"dialogOpen"));
+        onMain(()->{Object panel=field(activity,"playerPanel");assertEquals(2,field(panel,"sleepChoice"));invoke(panel,"sleepMenu",new Class<?>[]{});last.set(playerDialog());activity.stopPlayer();assertFalse(last.get().isShowing());assertNull(field(activity,"playerPanel"));});
     }
     private void capture(String name)throws Exception{i.waitForIdleSync();Thread.sleep(300);Bitmap image=i.getUiAutomation().takeScreenshot();assertNotNull(image);try(FileOutputStream out=new FileOutputStream(new File(app.getFilesDir(),name))){image.compress(Bitmap.CompressFormat.PNG,100,out);}finally{image.recycle();}}
 }

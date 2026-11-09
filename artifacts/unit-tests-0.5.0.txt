@@ -1,0 +1,4 @@
+tv.luma.LiveCatalogTest: 10 tests, 0 failures, 0 errors
+tv.luma.ProtocolTest: 17 tests, 0 failures, 0 errors
+tv.luma.ProviderContractTest: 6 tests, 0 failures, 0 errors
+tv.luma.ProviderIntegrationTest: 4 tests, 0 failures, 0 errors

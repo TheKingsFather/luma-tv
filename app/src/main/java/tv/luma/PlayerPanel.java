@@ -34,6 +34,7 @@ public final class PlayerPanel {
     private final Handler handler=new Handler(Looper.getMainLooper());
     private FrameLayout root,controls,top;private TextView titleLabel,status,timeLabel,playButton,sourceLabel;
     private SeekBar seek;private int sourceIndex,serial=0,episodeCount=0;private boolean started,controlsVisible=true,dialogOpen,stopAtEnd=false,changingSource;
+    private int sleepChoice;
     private long watchedSinceSync,lastSample,lastPosition,sleepAt;
     private String externalSub="";private final List<JSONObject> addonSubtitles=new ArrayList<>();
     private final Runnable hide=()->showControls(false);
@@ -43,7 +44,7 @@ public final class PlayerPanel {
         lastPosition=pos;lastSample=now;
         if(duration>0){timeLabel.setText(clock(pos)+"   /   "+clock(duration));if(!seek.isPressed())seek.setProgress((int)(pos*1000/duration));}
         if(watchedSinceSync>=15000)sync(false);
-        if(sleepAt>0&&now>=sleepAt){sleepAt=0;player.pause();showControls(true);Toast.makeText(activity,"Sleep timer finished",Toast.LENGTH_LONG).show();}
+        if(sleepAt>0&&now>=sleepAt){sleepAt=0;sleepChoice=0;player.pause();showControls(true);g.notice("Sleep timer finished");}
         handler.postDelayed(this,1000);
     }};
     public PlayerPanel(MainActivity activity,Title title,String id,List<Stream> streams,int index){
@@ -117,27 +118,61 @@ public final class PlayerPanel {
     }
     private void failover(){
         if(isFinishing()||dialogOpen)return;long position=player==null?0:player.getCurrentPosition();
-        if(sourceIndex+1<request.streams.size()){sourceIndex++;Toast.makeText(activity,"Trying the next source…",Toast.LENGTH_SHORT).show();prepare(position);return;}
-        if(player!=null)player.pause();status.setVisibility(View.GONE);showControls(true);dialogOpen=true;handler.removeCallbacks(hide);
-        show(new AlertDialog.Builder(activity).setTitle("This source couldn’t play").setMessage("Try another source, or check the provider in Stremio.").setPositiveButton("Choose source",(d,w)->{dialogOpen=false;sourceMenu();}).setNegativeButton("Back to title",(d,w)->finish()).setOnCancelListener(d->{dialogOpen=false;delayHide();}));
+        if(sourceIndex+1<request.streams.size()){sourceIndex++;g.notice("Trying the next source…");prepare(position);return;}
+        if(player!=null)player.pause();status.setVisibility(View.GONE);showControls(true);
+        show(new GlassDialog(g,"This source couldn’t play","Try another source, or check the provider in Stremio.")
+                .action("Back to title",false,this::finish,false).action("Choose source",true,this::sourceMenu,true));
     }
-    private void sourceMenu(){String[] labels=new String[request.streams.size()];for(int i=0;i<labels.length;i++)labels[i]=request.streams.get(i).name+" · "+request.streams.get(i).description.replace('\n',' ');dialogOpen=true;handler.removeCallbacks(hide);
-        show(new AlertDialog.Builder(activity).setTitle("Choose a source").setSingleChoiceItems(labels,sourceIndex,(d,index)->{long position=player==null?0:player.getCurrentPosition();sourceIndex=index;d.dismiss();dialogOpen=false;prepare(position);delayHide();}).setNegativeButton("Close",null).setOnDismissListener(d->{dialogOpen=false;delayHide();}));}
-    private void trackMenu(){dialogOpen=true;handler.removeCallbacks(hide);show(new AlertDialog.Builder(activity).setTitle("Audio & subtitles").setItems(new String[]{"Audio tracks","Embedded subtitles","Add-on subtitles"},(d,index)->{if(index==0)chooseTrack(C.TRACK_TYPE_AUDIO);else if(index==1)chooseTrack(C.TRACK_TYPE_TEXT);else chooseExternalSubtitle();}).setOnDismissListener(d->{dialogOpen=false;delayHide();}));}
+    private void sourceMenu(){
+        List<GlassDialog.Choice> choices=new ArrayList<>();
+        for(Stream stream:request.streams)choices.add(new GlassDialog.Choice(stream.name,stream.provider+" · "+stream.description));
+        show(GlassDialog.choices(g,"Choose a source",request.title.name,choices,sourceIndex,index->{
+            long position=player==null?0:player.getCurrentPosition();sourceIndex=index;prepare(position);delayHide();
+        }));
+    }
+    private void trackMenu(){
+        show(GlassDialog.choices(g,"Audio & subtitles","Choose the audio or subtitle track for this video.",new String[]{"Audio tracks","Embedded subtitles","Add-on subtitles"},-1,index->{
+            if(index==0)chooseTrack(C.TRACK_TYPE_AUDIO);else if(index==1)chooseTrack(C.TRACK_TYPE_TEXT);else chooseExternalSubtitle();
+        }));
+    }
     private void chooseTrack(int type){
-        if(player==null)return;List<String> labels=new ArrayList<>();List<TrackSelectionOverride> overrides=new ArrayList<>();if(type==C.TRACK_TYPE_TEXT){labels.add("Off");overrides.add(null);}
-        for(Tracks.Group group:player.getCurrentTracks().getGroups())if(group.getType()==type)for(int i=0;i<group.length;i++){if(!group.isTrackSupported(i))continue;Format f=group.getTrackFormat(i);String language=f.language==null?"Unknown language":new Locale(f.language).getDisplayLanguage();String label=(f.label!=null?f.label:language)+(f.channelCount>0?" · "+f.channelCount+" channels":"");labels.add(label);overrides.add(new TrackSelectionOverride(group.getMediaTrackGroup(),i));}
-        if(labels.isEmpty()){Toast.makeText(activity,"No supported tracks available",Toast.LENGTH_LONG).show();return;}
-        dialogOpen=true;handler.removeCallbacks(hide);show(new AlertDialog.Builder(activity).setTitle(type==C.TRACK_TYPE_TEXT?"Embedded subtitles":"Audio tracks").setItems(labels.toArray(new String[0]),(d,index)->{TrackSelectionParameters.Builder builder=player.getTrackSelectionParameters().buildUpon().clearOverridesOfType(type);TrackSelectionOverride override=overrides.get(index);builder.setTrackTypeDisabled(type,override==null);if(override!=null)builder.setOverrideForType(override);player.setTrackSelectionParameters(builder.build());}).setOnDismissListener(d->{dialogOpen=false;delayHide();}));
+        if(player==null)return;
+        List<GlassDialog.Choice> choices=new ArrayList<>();List<TrackSelectionOverride> overrides=new ArrayList<>();
+        int selected=-1;boolean disabled=player.getTrackSelectionParameters().disabledTrackTypes.contains(type);
+        if(type==C.TRACK_TYPE_TEXT){choices.add(new GlassDialog.Choice("Off","Hide subtitles for this video."));overrides.add(null);if(disabled)selected=0;}
+        for(Tracks.Group group:player.getCurrentTracks().getGroups())if(group.getType()==type)for(int n=0;n<group.length;n++){
+            if(!group.isTrackSupported(n))continue;Format format=group.getTrackFormat(n);
+            String language=format.language==null?"Unknown language":new Locale(format.language).getDisplayLanguage();
+            String label=format.label!=null?format.label:language;
+            choices.add(new GlassDialog.Choice(label,language+(format.channelCount>0?" · "+format.channelCount+" channels":"")));
+            overrides.add(new TrackSelectionOverride(group.getMediaTrackGroup(),n));
+            if(!disabled&&group.isTrackSelected(n))selected=choices.size()-1;
+        }
+        if(choices.isEmpty()){show(GlassDialog.message(g,"Audio tracks","No supported audio tracks are available from this source."));return;}
+        show(GlassDialog.choices(g,type==C.TRACK_TYPE_TEXT?"Embedded subtitles":"Audio tracks","Tracks included with your current source.",choices,selected,index->{
+            if(player==null)return;TrackSelectionParameters.Builder builder=player.getTrackSelectionParameters().buildUpon().clearOverridesOfType(type);
+            TrackSelectionOverride override=overrides.get(index);builder.setTrackTypeDisabled(type,override==null);
+            if(override!=null)builder.setOverrideForType(override);player.setTrackSelectionParameters(builder.build());
+        }));
     }
     private void loadSubtitles(){final String id=request.videoId;app.io.execute(()->{try{List<JSONObject> list=app.api.subtitles(app.addons,request.title.type,id);handler.post(()->{if(isFinishing()||!request.videoId.equals(id))return;addonSubtitles.clear();addonSubtitles.addAll(list);});}catch(Exception ignored){}});}
-    private void chooseExternalSubtitle(){if(addonSubtitles.isEmpty()){Toast.makeText(activity,"No add-on subtitles found yet. Try embedded subtitles.",Toast.LENGTH_LONG).show();return;}
-        List<String> labels=new ArrayList<>();labels.add("Use embedded subtitles");for(JSONObject sub:addonSubtitles){String language=text(sub,"lang");labels.add(new Locale(language).getDisplayLanguage()+"  ·  "+text(sub,"id"));}
-        dialogOpen=true;handler.removeCallbacks(hide);show(new AlertDialog.Builder(activity).setTitle("Add-on subtitles").setItems(labels.toArray(new String[0]),(d,index)->{externalSub=index==0?"":text(addonSubtitles.get(index-1),"url");long position=player.getCurrentPosition();prepare(position);}).setOnDismissListener(d->{dialogOpen=false;delayHide();}));}
-    private void sleepMenu(){dialogOpen=true;handler.removeCallbacks(hide);show(new AlertDialog.Builder(activity).setTitle("Sleep timer").setItems(new String[]{"Off","After this episode","In 30 minutes","In 60 minutes"},(d,index)->{sleepAt=index>=2?SystemClock.elapsedRealtime()+(index==2?1800000L:3600000L):0;stopAtEnd=index==1;Toast.makeText(activity,index==0?"Sleep timer off":"Sleep timer set",Toast.LENGTH_SHORT).show();}).setOnDismissListener(d->{dialogOpen=false;delayHide();}));}
+    private void chooseExternalSubtitle(){
+        if(addonSubtitles.isEmpty()){show(GlassDialog.message(g,"Add-on subtitles","No add-on subtitles found yet. Try embedded subtitles or check your Stremio subtitle add-ons."));return;}
+        List<GlassDialog.Choice> choices=new ArrayList<>();List<JSONObject> subtitles=new ArrayList<>(addonSubtitles);
+        choices.add(new GlassDialog.Choice("Use embedded subtitles","Switch back to the tracks included in this source."));int selected=externalSub.isEmpty()?0:-1;
+        for(JSONObject sub:subtitles){String language=text(sub,"lang");choices.add(new GlassDialog.Choice(new Locale(language).getDisplayLanguage(),text(sub,"id")));if(externalSub.equals(text(sub,"url")))selected=choices.size()-1;}
+        show(GlassDialog.choices(g,"Add-on subtitles","Subtitles from your connected Stremio add-ons.",choices,selected,index->{
+            if(player==null)return;externalSub=index==0?"":text(subtitles.get(index-1),"url");long position=player.getCurrentPosition();prepare(position);
+        }));
+    }
+    private void sleepMenu(){
+        show(GlassDialog.choices(g,"Sleep timer","Choose when playback should stop.",new String[]{"Off","After this episode","In 30 minutes","In 60 minutes"},sleepChoice,index->{
+            sleepChoice=index;sleepAt=index>=2?SystemClock.elapsedRealtime()+(index==2?1800000L:3600000L):0;stopAtEnd=index==1;g.notice(index==0?"Sleep timer off":"Sleep timer set");
+        }));
+    }
     private Video nextVideo(){List<Video> videos=request.title.videos();for(int i=0;i<videos.size()-1;i++)if(videos.get(i).id.equals(request.videoId)){for(int j=i+1;j<videos.size();j++)if(!videos.get(j).isFuture())return videos.get(j);break;}return null;}
-    private void nextEpisode(boolean automatic){Video next=nextVideo();if(next==null){Toast.makeText(activity,"You’re all caught up",Toast.LENGTH_LONG).show();return;}
-        if(automatic&&episodeCount>=2){dialogOpen=true;show(new AlertDialog.Builder(activity).setTitle("Still watching?").setMessage("Your next episode is ready when you are.").setPositiveButton("Keep watching",(d,w)->{episodeCount=0;dialogOpen=false;nextEpisode(false);}).setNegativeButton("Back to title",(d,w)->finish()));return;}
+    private void nextEpisode(boolean automatic){Video next=nextVideo();if(next==null){g.notice("You’re all caught up");return;}
+        if(automatic&&episodeCount>=2){show(new GlassDialog(g,"Still watching?","Your next episode is ready when you are.").action("Back to title",false,this::finish,false).action("Keep watching",true,()->{episodeCount=0;nextEpisode(false);},true));return;}
         status.setText("Finding the next episode…");status.setVisibility(View.VISIBLE);final int token=++serial;Title title=request.title;app.io.execute(()->{try{StreamResult result=app.api.streams(app.addons,title,next.id,next.json.optJSONArray("streams"));handler.post(()->{if(isFinishing()||token!=serial)return;if(result.streams.isEmpty()){status.setText("No source for the next episode. Try it from the title page.");showControls(true);return;}sync(false);request=new PlayerActivity.Request(title,next.id,result.streams,0);app.playback=request;sourceIndex=0;episodeCount++;watchedSinceSync=0;externalSub="";addonSubtitles.clear();titleLabel.setText(title.name+" · S"+next.season+" E"+next.episode);prepare(app.resume(title.id,next.id));loadSubtitles();});}catch(Exception e){handler.post(()->{if(token==serial&&!isFinishing()){status.setText(StremioClient.readable(e));showControls(true);}});}});
     }
     private void sync(boolean ended){if(player==null||request==null)return;app.progress(request.title,request.videoId,player.getCurrentPosition(),player.getDuration(),watchedSinceSync,ended);watchedSinceSync=0;}
@@ -150,11 +185,14 @@ public final class PlayerPanel {
         if(!controlsVisible){if(code==KeyEvent.KEYCODE_DPAD_LEFT||code==KeyEvent.KEYCODE_DPAD_RIGHT){if(player!=null)player.seekTo(Math.max(0,player.getCurrentPosition()+(code==KeyEvent.KEYCODE_DPAD_LEFT?-10000:10000)));showControls(true);return true;}if(code==KeyEvent.KEYCODE_DPAD_CENTER||code==KeyEvent.KEYCODE_DPAD_UP||code==KeyEvent.KEYCODE_DPAD_DOWN||code==KeyEvent.KEYCODE_ENTER){showControls(true);return true;}}
         delayHide();return false;
     }
-    private void show(AlertDialog.Builder builder){if(isFinishing())return;AlertDialog dialog=builder.create();dialogs.add(dialog);dialog.show();}
+    private void show(GlassDialog dialog){
+        if(isFinishing())return;handler.removeCallbacks(hide);dialogs.add(dialog);dialogOpen=true;
+        dialog.setOnDismissListener(d->{dialogs.remove(dialog);dialogOpen=!dialogs.isEmpty();if(!isFinishing())delayHide();});dialog.show();
+    }
     private void seekBy(long delta){if(player!=null)player.seekTo(Math.max(0,player.getCurrentPosition()+delta));}
     public void onBackPressed(){if(controlsVisible&&player!=null&&player.isPlaying())showControls(false);else finish();}
     public void onResume(){if(player==null)return;if(backgroundWasPlaying){backgroundWasPlaying=false;player.play();}if(player.getPlaybackState()==Player.STATE_BUFFERING){handler.removeCallbacks(watchdog);handler.postDelayed(watchdog,25000);}delayHide();}
     public void onStop(){if(player!=null){backgroundWasPlaying=player.getPlayWhenReady();sync(false);player.pause();lastSample=0;handler.removeCallbacks(hide);handler.removeCallbacks(watchdog);}}
-    public void release(){if(closed)return;sync(false);closed=true;serial++;for(Dialog dialog:dialogs)if(dialog.isShowing())dialog.dismiss();dialogs.clear();handler.removeCallbacksAndMessages(null);if(player!=null){video.setPlayer(null);player.release();player=null;}root.setKeepScreenOn(false);app.playback=null;}
+    public void release(){if(closed)return;sync(false);closed=true;serial++;for(Dialog dialog:new ArrayList<>(dialogs))if(dialog.isShowing())dialog.dismiss();dialogs.clear();dialogOpen=false;handler.removeCallbacksAndMessages(null);if(player!=null){video.setPlayer(null);player.release();player=null;}root.setKeepScreenOn(false);app.playback=null;}
     private static String clock(long ms){long sec=Math.max(0,ms/1000);return sec>=3600?String.format(Locale.US,"%d:%02d:%02d",sec/3600,sec/60%60,sec%60):String.format(Locale.US,"%02d:%02d",sec/60,sec%60);}
 }

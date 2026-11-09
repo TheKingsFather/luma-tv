@@ -48,6 +48,7 @@ public final class MainActivity extends Activity {
     private String homeTab="Home",detailOrigin="Home",lastQuery="";
     private int selectedSeason=-1;
     private Dialog sourcesDialog,exitDialog;
+    private final List<Dialog> browseDialogs=new ArrayList<>();
 
 
     @Override public void onCreate(Bundle state){super.onCreate(state);app=(LumaApp)getApplication();g=new Glass(this);shell=g.root();browser=new FrameLayout(this);shell.addView(browser,new FrameLayout.LayoutParams(-1,-1));returnToPlayer=g.button("Return to player",false,this::restorePlayer);g.at(shell,returnToPlayer,192,48,220,30);returnToPlayer.setVisibility(View.GONE);setContentView(shell);Glass.fullscreen(this);PlayerActivity.Request pending=getIntent().getBooleanExtra("playPending",false)?app.playback:null;if(app.connected()||app.guest||pending!=null)showHome("Home");else showPairing();if(pending!=null)play(pending.title,pending.videoId,pending.streams,pending.index);}
@@ -55,7 +56,7 @@ public final class MainActivity extends Activity {
     @Override protected void onStart(){super.onStart();active=true;if(pairing&&pairPoll!=null)main.post(pairPoll);}
     @Override protected void onResume(){super.onResume();Glass.fullscreen(this);if(playerPanel!=null)playerPanel.onResume();}
     @Override protected void onStop(){super.onStop();active=false;if(playerPanel!=null)playerPanel.onStop();if(pairPoll!=null)main.removeCallbacks(pairPoll);}
-    @Override protected void onDestroy(){screen++;invalidateBrowse();if(playerPanel!=null)playerPanel.release();main.removeCallbacksAndMessages(null);if(exitDialog!=null)exitDialog.dismiss();super.onDestroy();}
+    @Override protected void onDestroy(){screen++;invalidateBrowse();if(playerPanel!=null)playerPanel.release();main.removeCallbacksAndMessages(null);if(exitDialog!=null)exitDialog.dismiss();for(Dialog dialog:new ArrayList<>(browseDialogs))dialog.dismiss();browseDialogs.clear();super.onDestroy();}
     private FrameLayout newScreen(){screen++;pairing=false;pairCode="";navFocus=null;heroTitle=null;hero=null;if(pairPoll!=null)main.removeCallbacks(pairPoll);if(listing!=null&&root==listing.root)listing.focus=root.findFocus();root=g.root();browser.removeAllViews();browser.addView(root,new FrameLayout.LayoutParams(-1,-1));return root;}
 
     private BrowsePage rememberListing(String key){
@@ -88,7 +89,7 @@ public final class MainActivity extends Activity {
         if(playerPanel!=null&&playerPanel.dispatchKeyEvent(event))return true;return super.dispatchKeyEvent(event);
     }
     private <T> void task(Callable<T> call,Consumer<T> success,Consumer<Exception> failure){int token=screen;app.io.execute(()->{try{T result=call.call();main.post(()->{if(!isDestroyed()&&screen==token)success.accept(result);});}catch(Exception e){main.post(()->{if(!isDestroyed()&&screen==token)failure.accept(e);});}});}
-    private void toast(String text){Toast.makeText(this,text,Toast.LENGTH_LONG).show();}
+    private void toast(String text){g.notice(text);}
     private void brand(){LinearLayout row=g.row();row.addView(g.icon("logo",Glass.MINT,29));g.gap(row,10);TextView logo=g.text("luma",27,Glass.WHITE,true);logo.setLetterSpacing(.02f);row.addView(logo);g.at(root,row,175,48,52,30);}
     private void footer(String label){TextView hint=g.text(label,12,Glass.MUTED,false);g.at(root,hint,1100,20,56,684);}
 
@@ -261,7 +262,7 @@ public final class MainActivity extends Activity {
             populateEpisodes(line,title,videos,selectedSeason);
             TextView seasonButton=g.button(selectedSeason==0?"Specials  ▾":"Season "+selectedSeason+"  ▾",false,()->{
                 List<Integer> numbers=new ArrayList<>(seasons);String[] names=new String[numbers.size()];for(int i=0;i<names.length;i++)names[i]=numbers.get(i)==0?"Specials":"Season "+numbers.get(i);
-                new AlertDialog.Builder(this).setTitle("Choose a season").setItems(names,(d,index)->{selectedSeason=numbers.get(index);renderDetails(title,loaded);}).show();
+                modal(GlassDialog.choices(g,"Choose a season",title.name,names,numbers.indexOf(selectedSeason),index->{selectedSeason=numbers.get(index);renderDetails(title,loaded);})).show();
             });seasonButton.setTextSize(android.util.TypedValue.COMPLEX_UNIT_PX,g.u(13));seasonButton.setPadding(g.u(14),g.u(4),g.u(14),g.u(4));seasonButton.setMinHeight(0);g.at(root,seasonButton,145,35,56,550);g.at(root,episodes,1174,98,50,591);
         }else{
             String credits="";JSONArray cast=title.json.optJSONArray("cast");if(cast!=null){List<String> names=new ArrayList<>();for(int i=0;i<Math.min(5,cast.length());i++)names.add(cast.optString(i));credits="STARRING   "+String.join("  ·  ",names);}TextView castText=g.text(credits,13,Glass.MUTED,false);castText.setMaxLines(2);g.at(root,castText,1080,66,56,578);
@@ -282,8 +283,15 @@ public final class MainActivity extends Activity {
             showSources(title,videoId,result.streams);
         },e->{if(token!=sourceRequest)return;if(sourcesDialog!=null){sourcesDialog.dismiss();sourcesDialog=null;}toast(StremioClient.readable(e));});
     }
-    private Dialog dialog(String title,String message){Dialog d=new Dialog(this);LinearLayout box=g.column();g.pad(box,32,28);g.material(box,28);box.addView(g.text(title,27,Glass.WHITE,true));g.spacer(box,14);TextView body=g.text(message,16,Glass.MUTED,false);body.setLineSpacing(g.u(5),1);box.addView(body);g.spacer(box,25);TextView cancel=g.button("Close",false,d::dismiss);box.addView(cancel,new LinearLayout.LayoutParams(-2,g.u(45)));d.setContentView(box);if(d.getWindow()!=null){d.getWindow().setBackgroundDrawableResource(android.R.color.transparent);d.getWindow().setLayout(g.u(650),-2);d.getWindow().addFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND);d.getWindow().setDimAmount(.65f);}cancel.requestFocus();return d;}
-    private void showSources(Title title,String videoId,List<Stream> streams){Dialog d=new Dialog(this);LinearLayout box=g.column();g.pad(box,28,25);g.material(box,28);box.addView(g.text("Choose your source",27,Glass.WHITE,true));g.spacer(box,8);box.addView(g.text(title.name+"  ·  "+streams.size()+" playable sources",14,Glass.MUTED,false));g.spacer(box,20);ScrollView scroller=new ScrollView(this);LinearLayout list=g.column();scroller.addView(list);for(int i=0;i<streams.size();i++){final int index=i;Stream s=streams.get(i);TextView button=g.button(s.name+"\n"+s.description,false,()->{d.dismiss();startPlayer(title,videoId,streams,index);});button.setGravity(Gravity.CENTER_VERTICAL);button.setMaxLines(3);button.setEllipsize(TextUtils.TruncateAt.END);button.setTextSize(android.util.TypedValue.COMPLEX_UNIT_PX,g.u(14));list.addView(button,new LinearLayout.LayoutParams(-1,g.u(84)));g.spacer(list,10);}box.addView(scroller,new LinearLayout.LayoutParams(g.u(720),g.u(350)));d.setContentView(box);d.show();d.getWindow().setBackgroundDrawableResource(android.R.color.transparent);d.getWindow().setLayout(g.u(780),-2);list.getChildAt(0).requestFocus();}
+    private GlassDialog modal(GlassDialog dialog){
+        browseDialogs.add(dialog);dialog.setOnDismissListener(d->browseDialogs.remove(dialog));return dialog;
+    }
+    private Dialog dialog(String title,String message){return modal(GlassDialog.message(g,title,message));}
+    private void showSources(Title title,String videoId,List<Stream> streams){
+        List<GlassDialog.Choice> choices=new ArrayList<>();
+        for(Stream stream:streams)choices.add(new GlassDialog.Choice(stream.name,stream.provider+" · "+stream.description));
+        modal(GlassDialog.choices(g,"Choose your source",title.name+" · "+streams.size()+" playable sources",choices,-1,index->startPlayer(title,videoId,streams,index))).show();
+    }
     private void startPlayer(Title title,String videoId,List<Stream> streams,int index){
         play(title,videoId,streams,index);
     }
@@ -292,14 +300,18 @@ public final class MainActivity extends Activity {
         newScreen();page="Settings";brand();TextView back=g.button("←  Back",false,this::backToBrowse);g.at(root,back,130,46,1098,30);g.at(root,g.text("Make yourself at home.",36,Glass.WHITE,true),1100,60,54,115);
         LinearLayout account=g.column();g.pad(account,28,25);g.material(account,28);account.addView(g.text("YOUR STREMIO",11,Glass.MINT,true));g.spacer(account,20);account.addView(g.text(app.connected()?app.accountName:"A cinema with your name on it.",25,Glass.WHITE,true));g.spacer(account,12);account.addView(g.text(app.connected()?app.addons.size()+" connected add-ons · Library sync on":"Scan a code to bring your library and add-ons.",15,Glass.MUTED,false));g.spacer(account,25);
         TextView connect=g.button(app.connected()?"Refresh Stremio":"Connect Stremio",true,()->{if(!app.connected()){showPairing();return;}toast("Refreshing your library and add-ons…");task(()->{app.refresh();return true;},v->{toast("Stremio is up to date");invalidateBrowse();showSettings();},e->toast(StremioClient.readable(e)));});account.addView(connect,new LinearLayout.LayoutParams(-2,g.u(48)));g.spacer(account,14);
-        if(app.connected())account.addView(g.button("Disconnect this TV",false,()->new AlertDialog.Builder(this).setTitle("Disconnect Stremio?").setMessage("Your account stays on Stremio. The connection and saved account data will be removed from this TV.").setNegativeButton("Keep connected",null).setPositiveButton("Disconnect",(d,w)->{if(playerPanel!=null)stopPlayer();invalidateBrowse();app.disconnect();showPairing();}).show()),new LinearLayout.LayoutParams(-2,g.u(48)));
+        if(app.connected())account.addView(g.button("Disconnect this TV",false,()->modal(GlassDialog.confirm(g,"Disconnect Stremio?","Your account stays on Stremio. The connection and saved account data will be removed from this TV.","Keep connected","Disconnect",()->{if(playerPanel!=null)stopPlayer();invalidateBrowse();app.disconnect();showPairing();})).show()),new LinearLayout.LayoutParams(-2,g.u(48)));
         g.at(root,account,510,356,56,207);
         LinearLayout prefs=g.column();g.pad(prefs,25,23);g.material(prefs,28);prefs.addView(g.text("PLAYBACK",11,Glass.MINT,true));g.spacer(prefs,18);
         toggle(prefs,"Always choose a source","chooseSources",false);toggle(prefs,"Play the next episode","autoplay",true);toggle(prefs,"Subtitles by default","subtitles",true);
-        TextView language=g.button("Audio language: "+app.settings.getString("audioLanguage","en"),false,()->new AlertDialog.Builder(this).setTitle("Preferred audio language").setItems(new String[]{"English","French","Spanish","German","Portuguese","Hindi","Italian"},(d,index)->{app.settings.edit().putString("audioLanguage",new String[]{"en","fr","es","de","pt","hi","it"}[index]).apply();showSettings();}).show());prefs.addView(language,new LinearLayout.LayoutParams(-1,g.u(47)));g.spacer(prefs,11);
+        TextView language=g.button("Audio language: "+app.settings.getString("audioLanguage","en"),false,()->showAudioLanguages());prefs.addView(language,new LinearLayout.LayoutParams(-1,g.u(47)));g.spacer(prefs,11);
         prefs.addView(g.button("View connected add-ons",false,this::showAddons),new LinearLayout.LayoutParams(-1,g.u(47)));
         g.at(root,prefs,595,356,590,207);
-        TextView note=g.text("Luma TV  0.4.1   ·   Glass, made for your big screen.",13,Glass.MUTED,false);g.at(root,note,1000,26,58,612);footer("Add or configure providers in Stremio on your phone, then refresh them here.");connect.requestFocus();
+        TextView note=g.text("Luma TV  0.5.0   ·   Glass, made for your big screen.",13,Glass.MUTED,false);g.at(root,note,1000,26,58,612);footer("Add or configure providers in Stremio on your phone, then refresh them here.");connect.requestFocus();
+    }
+    private void showAudioLanguages(){
+        String[] codes={"en","fr","es","de","pt","hi","it"};
+        modal(GlassDialog.choices(g,"Preferred audio language","Used when a source has multiple audio tracks.",new String[]{"English","French","Spanish","German","Portuguese","Hindi","Italian"},Arrays.asList(codes).indexOf(app.settings.getString("audioLanguage","en")),index->{app.settings.edit().putString("audioLanguage",codes[index]).apply();showSettings();})).show();
     }
     private void toggle(LinearLayout parent,String name,String key,boolean fallback){boolean enabled=app.settings.getBoolean(key,fallback);TextView button=g.button(name+"    "+(enabled?"On":"Off"),false,()->{app.settings.edit().putBoolean(key,!enabled).apply();showSettings();});button.setGravity(Gravity.CENTER_VERTICAL);button.setTextSize(android.util.TypedValue.COMPLEX_UNIT_PX,g.u(14));parent.addView(button,new LinearLayout.LayoutParams(-1,g.u(47)));g.spacer(parent,11);}
     private void showAddons(){newScreen();page="Addons";brand();TextView back=g.button("←  Settings",false,this::showSettings);g.at(root,back,165,46,1063,30);g.at(root,g.text("Your connected add-ons",36,Glass.WHITE,true),1100,56,54,115);g.at(root,g.text("Manage them in Stremio. Refresh here to bring your changes across.",15,Glass.MUTED,false),1100,30,56,176);ScrollView scroller=new ScrollView(this);LinearLayout list=g.column();g.pad(list,56,12);scroller.addView(list);g.at(root,scroller,1280,433,0,225);for(Addon a:app.addons){LinearLayout box=g.column();g.pad(box,22,18);g.material(box,20);box.addView(g.text(a.name,21,Glass.WHITE,true));g.spacer(box,8);box.addView(g.text(text(a.manifest,"description"),14,Glass.MUTED,false));list.addView(box);g.spacer(list,14);}back.requestFocus();}

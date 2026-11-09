@@ -35,6 +35,8 @@ public final class Glass {
     public void at(FrameLayout parent,View child,float w,float h,float x,float y){FrameLayout.LayoutParams p=new FrameLayout.LayoutParams(w<0?(int)w:u(w),h<0?(int)h:u(h));p.leftMargin=u(x);p.topMargin=u(y);parent.addView(child,p);}
     public void pad(View v,int horizontal,int vertical){v.setPadding(u(horizontal),u(vertical),u(horizontal),u(vertical));}
     public Drawable panel(int radius,boolean active){return new Material(u(radius),active,false);}
+    public Drawable surface(int radius){GradientDrawable base=new GradientDrawable(GradientDrawable.Orientation.TL_BR,new int[]{0xff203c4b,0xff192239});base.setCornerRadius(u(radius));return new LayerDrawable(new Drawable[]{base,panel(radius,false)});}
+    public void notice(String message){GlassNotice.show(this,message);}
     public void material(View v,int radius){v.setBackground(panel(radius,false));v.setClipToOutline(true);}
     public TextView button(String label,boolean primary,Runnable action){
         TextView b=text(label,16,primary?BG:WHITE,true);b.setGravity(Gravity.CENTER);b.setMinHeight(u(50));b.setPadding(u(24),u(12),u(24),u(12));b.setBackground(new Material(u(25),false,primary));

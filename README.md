@@ -1,8 +1,24 @@
 # Luma TV
 
-A native Android TV client with an iOS-inspired glass interface and Stremio QR pairing. Version **0.4.1**. Package: `tv.luma`. Android 8.0+ (API 26), landscape, D-pad remote.
+A native Android TV client with an iOS-inspired glass interface and Stremio QR pairing. Version **0.5.0**. Package: `tv.luma`. Android 8.0+ (API 26), landscape, D-pad remote.
 
 Source: [TheKingsFather/luma-tv](https://github.com/TheKingsFather/luma-tv) (private).
+
+## New in 0.5.0
+
+App dialogs now share one glass surface, typography, spacing and remote-focus
+treatment. This includes browse/player sources, audio tracks, embedded/add-on
+subtitles, sleep timer, season selection, preferred language, playback failures,
+still-watching prompts, source discovery/status messages, disconnect and exit.
+Current choices have a mint checkmark and receive initial focus. Long lists
+scroll within the panel, with a consistent Close action and Back cancellation.
+
+Brief feedback such as saved-library and sleep-timer messages uses a matching
+glass notice that fades after four seconds without taking remote focus.
+Nested player menus retain their dialog state until the active menu closes;
+releasing the player dismisses its open menus.
+
+Install with `adb install -r artifacts/Luma-TV-0.5.0.apk`.
 
 ## New in 0.4.1
 
@@ -78,7 +94,7 @@ Install:
 
 ```bash
 adb connect 192.168.1.8:5555
-adb -s 192.168.1.8:5555 install -r artifacts/Luma-TV-0.4.1.apk
+adb -s 192.168.1.8:5555 install -r artifacts/Luma-TV-0.5.0.apk
 ```
 
 ## Implementation map
@@ -90,6 +106,8 @@ adb -s 192.168.1.8:5555 install -r artifacts/Luma-TV-0.4.1.apk
 | `SessionStore.java` | AES-GCM / Android Keystore storage |
 | `LumaApp.java` | Account state, cached library and serialized sync writes |
 | `Glass.java` | TV styling, glass material, icons, visible-only image loading |
+| `GlassDialog.java` | Shared modal surface, scrolling choices, confirmations and remote focus |
+| `GlassNotice.java` | Transient glass status messages without focus changes |
 | `PosterCard.java` | Focus delay, animated backdrop previews, row scrolling and grid bounds |
 | `ExitDialog.java` | Branded exit prompt with Stay selected by default |
 | `MainActivity.java` | Pairing, browsing, search, library, details and settings |
@@ -99,6 +117,14 @@ adb -s 192.168.1.8:5555 install -r artifacts/Luma-TV-0.4.1.apk
 The background image pipeline gives backdrops their own workers and only schedules visible poster cards. Retained browse pages own their asynchronous catalog callbacks: requests may finish on a detached page without replacing the active screen. Switching sections invalidates those pages, and late results are discarded. Other screens use a screen generation token to drop stale callbacks. Progress writes are serialized and retained locally when the server is unavailable. Subtitle requests use a separate data source so video-provider request headers are not forwarded to subtitle hosts.
 
 ## Validation
+
+For 0.5.0, the release/debug builds, all **37 JVM tests**, and Android lint passed.
+**15 distinct device checks** passed on the Xiaomi TV: seven shared-dialog/notice
+checks, six poster/exit regressions, and two player-menu regressions using local
+video in the separate debug package. Source-list screenshots were visually
+checked; a pixel comparison verifies that scrolling leaves the heading intact.
+The release APK retains the existing certificate and was installed with
+`adb install -r`. See `artifacts/VALIDATION-0.5.0.txt` for the runs and limits.
 
 For 0.4.1, the release build and Android release lint passed. On the Xiaomi TV,
 the header's equal tab widths and spacing were checked visually and through
@@ -114,11 +140,15 @@ These tests use generated views on a debug-only activity and leave account and
 library settings alone. The final release APK uses the same certificate as
 the installed 0.3.0 app and was installed with `adb install -r`.
 
-Run the isolated UI suite on a connected device with the debug and test APKs:
+Debug builds use the separate `tv.luma.debug` package, keeping fixtures apart
+from the owner's release account and preferences. Install both debug APKs, then
+run the isolated UI suites on a connected device:
 
 ```bash
-adb shell am instrument -w -r -e class tv.luma.PosterExitUiTest \
-  tv.luma.test/androidx.test.runner.AndroidJUnitRunner
+adb install -r app/build/outputs/apk/debug/app-debug.apk
+adb install -r app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
+adb shell am instrument -w -r -e class tv.luma.GlassDialogUiTest,tv.luma.PosterExitUiTest \
+  tv.luma.debug.test/androidx.test.runner.AndroidJUnitRunner
 ```
 
 Fixture screenshots and validation logs are in `artifacts/`. Signing keys,

@@ -1,0 +1,48 @@
+Luma TV 0.5.0 — uniform dialogs (2026-11-09)
+
+Scope:
+- Shared GlassDialog surface for browser/player sources, source discovery and
+  empty-source messages, audio tracks, embedded/add-on subtitles, sleep timer,
+  seasons, audio-language settings, playback failures, still-watching,
+  disconnect and exit confirmations.
+- Consistent branded surface, headings, selection checks, bounded scrolling,
+  remote focus, Close action and Back cancellation.
+- GlassNotice replaces app-owned Android Toast messages; four-second timeout,
+  one reusable surface, no remote-focus changes.
+- Player menu tracking survives nested menu dismissals and clears on release.
+- Debug uses tv.luma.debug, separate from the release account/preferences.
+
+Build:
+- Official Gradle release/debug/test APK builds passed, JDK 21 / SDK 34.
+- All 37 JVM tests passed; summary in unit-tests-0.5.0.txt.
+- Android lint passed, including a final lint run after adding device checks.
+- APK signature matches the existing release certificate SHA-256:
+  98de42adaee0e1c6178bffaecd6dc18e301fa8cd6de14bed087c8ac78db032f2
+
+Xiaomi TV, Android 14: 15 distinct UI/video checks passed across these runs:
+- device-dialog-tests-0.5.0.log: 13/13 (six poster/exit, seven modal/notice).
+- Visual QA then caught source rows drawing over the heading. The list now has
+  a clipped viewport, and the source screenshot was refreshed and checked.
+- device-dialog-final-tests-0.5.0.log: eight passed, one initial image-comparison
+  failure. The two actual player regressions passed in tv.luma.debug using local
+  video: nested subtitles/Off preserve the engine and pause state; source/sleep
+  cancellation and player release clean up dialogs. Six modal checks passed.
+- device-source-scroll-test-0.5.0.log: remaining source-list check passed after
+  correcting the test to compare screen coordinates after window animation.
+  It verifies the heading pixels stay unchanged when scrolling, selected-item
+  visibility, footer navigation and panel height. Final source screenshot has
+  no content painting over the heading.
+- Generated screenshots only are committed; no personal account/library images.
+- Debug application and debug test APK were removed after checks.
+- Release installed with adb install -r; package reports code 6 / name 0.5.0.
+  Cold launch succeeded. No crash entries appeared in the inspected buffer.
+
+No cloud account fixtures were injected into the release package. The seven
+shared modal tests and six poster/exit tests use generated views. The two player
+checks use the separate debug package and a local video. The six older full
+navigation/playback regressions were not rerun. An attempted local emulator
+exited during OS startup; playback checks were completed on the TV instead.
+
+Release smoke check: connected Stremio footer remained visible. Opened Settings
+and the preferred-language dialog; verified the current-choice marker and Close,
+then returned to Home without changing any setting.

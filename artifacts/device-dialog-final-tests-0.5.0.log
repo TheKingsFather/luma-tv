@@ -1,0 +1,187 @@
+INSTRUMENTATION_STATUS: class=tv.luma.NavigationPlaybackTest
+INSTRUMENTATION_STATUS: current=1
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=9
+INSTRUMENTATION_STATUS: stream=
+tv.luma.NavigationPlaybackTest:
+INSTRUMENTATION_STATUS: test=playerSourceAndSleepMenusCancelCleanlyAndReleaseDismissesOpenMenus
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=tv.luma.NavigationPlaybackTest
+INSTRUMENTATION_STATUS: current=1
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=9
+INSTRUMENTATION_STATUS: stream=.
+INSTRUMENTATION_STATUS: test=playerSourceAndSleepMenusCancelCleanlyAndReleaseDismissesOpenMenus
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_STATUS: class=tv.luma.NavigationPlaybackTest
+INSTRUMENTATION_STATUS: current=2
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=9
+INSTRUMENTATION_STATUS: stream=
+INSTRUMENTATION_STATUS: test=nestedPlayerSubtitlesKeepDialogStateAndDoNotRestartPlayback
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=tv.luma.NavigationPlaybackTest
+INSTRUMENTATION_STATUS: current=2
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=9
+INSTRUMENTATION_STATUS: stream=.
+INSTRUMENTATION_STATUS: test=nestedPlayerSubtitlesKeepDialogStateAndDoNotRestartPlayback
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_STATUS: class=tv.luma.GlassDialogUiTest
+INSTRUMENTATION_STATUS: current=3
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=9
+INSTRUMENTATION_STATUS: stream=
+tv.luma.GlassDialogUiTest:
+INSTRUMENTATION_STATUS: test=statusNoticeReusesSurfaceWithoutStealingFocusAndFades
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=tv.luma.GlassDialogUiTest
+INSTRUMENTATION_STATUS: current=3
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=9
+INSTRUMENTATION_STATUS: stream=.
+INSTRUMENTATION_STATUS: test=statusNoticeReusesSurfaceWithoutStealingFocusAndFades
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_STATUS: class=tv.luma.GlassDialogUiTest
+INSTRUMENTATION_STATUS: current=4
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=9
+INSTRUMENTATION_STATUS: stream=
+INSTRUMENTATION_STATUS: test=longSourceListRevealsCurrentItemAndSupportsFooterNavigation
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=tv.luma.GlassDialogUiTest
+INSTRUMENTATION_STATUS: current=4
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=9
+INSTRUMENTATION_STATUS: stack=Scrolling source rows must not paint over the heading: arrays first differed at element [0]; expected:<-16114652> but was:<-16445934>
+	at org.junit.internal.ComparisonCriteria.arrayEquals(ComparisonCriteria.java:78)
+	at org.junit.internal.ComparisonCriteria.arrayEquals(ComparisonCriteria.java:28)
+	at org.junit.Assert.internalArrayEquals(Assert.java:534)
+	at org.junit.Assert.assertArrayEquals(Assert.java:418)
+	at tv.luma.GlassDialogUiTest.longSourceListRevealsCurrentItemAndSupportsFooterNavigation(GlassDialogUiTest.java:66)
+	... 34 trimmed
+Caused by: java.lang.AssertionError: expected:<-16114652> but was:<-16445934>
+	at org.junit.Assert.fail(Assert.java:89)
+	at org.junit.Assert.failNotEquals(Assert.java:835)
+	at org.junit.Assert.assertEquals(Assert.java:120)
+	at org.junit.Assert.assertEquals(Assert.java:146)
+	at org.junit.internal.ExactComparisonCriteria.assertElementsEqual(ExactComparisonCriteria.java:8)
+	at org.junit.internal.ComparisonCriteria.arrayEquals(ComparisonCriteria.java:76)
+	... 39 more
+
+INSTRUMENTATION_STATUS: stream=
+Error in longSourceListRevealsCurrentItemAndSupportsFooterNavigation(tv.luma.GlassDialogUiTest):
+Scrolling source rows must not paint over the heading: arrays first differed at element [0]; expected:<-16114652> but was:<-16445934>
+	at org.junit.internal.ComparisonCriteria.arrayEquals(ComparisonCriteria.java:78)
+	at org.junit.internal.ComparisonCriteria.arrayEquals(ComparisonCriteria.java:28)
+	at org.junit.Assert.internalArrayEquals(Assert.java:534)
+	at org.junit.Assert.assertArrayEquals(Assert.java:418)
+	at tv.luma.GlassDialogUiTest.longSourceListRevealsCurrentItemAndSupportsFooterNavigation(GlassDialogUiTest.java:66)
+	... 34 trimmed
+Caused by: java.lang.AssertionError: expected:<-16114652> but was:<-16445934>
+	at org.junit.Assert.fail(Assert.java:89)
+	at org.junit.Assert.failNotEquals(Assert.java:835)
+	at org.junit.Assert.assertEquals(Assert.java:120)
+	at org.junit.Assert.assertEquals(Assert.java:146)
+	at org.junit.internal.ExactComparisonCriteria.assertElementsEqual(ExactComparisonCriteria.java:8)
+	at org.junit.internal.ComparisonCriteria.arrayEquals(ComparisonCriteria.java:76)
+	... 39 more
+
+INSTRUMENTATION_STATUS: test=longSourceListRevealsCurrentItemAndSupportsFooterNavigation
+INSTRUMENTATION_STATUS_CODE: -2
+INSTRUMENTATION_STATUS: class=tv.luma.GlassDialogUiTest
+INSTRUMENTATION_STATUS: current=5
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=9
+INSTRUMENTATION_STATUS: stream=
+INSTRUMENTATION_STATUS: test=selectedChoiceGetsFocusAndRemoteSelectionRunsOnce
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=tv.luma.GlassDialogUiTest
+INSTRUMENTATION_STATUS: current=5
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=9
+INSTRUMENTATION_STATUS: stream=.
+INSTRUMENTATION_STATUS: test=selectedChoiceGetsFocusAndRemoteSelectionRunsOnce
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_STATUS: class=tv.luma.GlassDialogUiTest
+INSTRUMENTATION_STATUS: current=6
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=9
+INSTRUMENTATION_STATUS: stream=
+INSTRUMENTATION_STATUS: test=confirmationDefaultsToCancelAndOnlyExplicitAcceptActs
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=tv.luma.GlassDialogUiTest
+INSTRUMENTATION_STATUS: current=6
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=9
+INSTRUMENTATION_STATUS: stream=.
+INSTRUMENTATION_STATUS: test=confirmationDefaultsToCancelAndOnlyExplicitAcceptActs
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_STATUS: class=tv.luma.GlassDialogUiTest
+INSTRUMENTATION_STATUS: current=7
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=9
+INSTRUMENTATION_STATUS: stream=
+INSTRUMENTATION_STATUS: test=backAndCloseDoNotChooseAnOption
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=tv.luma.GlassDialogUiTest
+INSTRUMENTATION_STATUS: current=7
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=9
+INSTRUMENTATION_STATUS: stream=.
+INSTRUMENTATION_STATUS: test=backAndCloseDoNotChooseAnOption
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_STATUS: class=tv.luma.GlassDialogUiTest
+INSTRUMENTATION_STATUS: current=8
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=9
+INSTRUMENTATION_STATUS: stream=
+INSTRUMENTATION_STATUS: test=openingChildMenuDismissesParentAndKeepsChildInteractive
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=tv.luma.GlassDialogUiTest
+INSTRUMENTATION_STATUS: current=8
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=9
+INSTRUMENTATION_STATUS: stream=.
+INSTRUMENTATION_STATUS: test=openingChildMenuDismissesParentAndKeepsChildInteractive
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_STATUS: class=tv.luma.GlassDialogUiTest
+INSTRUMENTATION_STATUS: current=9
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=9
+INSTRUMENTATION_STATUS: stream=
+INSTRUMENTATION_STATUS: test=messageUsesSharedSurfaceAndCloseKeepsOwnerOpen
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=tv.luma.GlassDialogUiTest
+INSTRUMENTATION_STATUS: current=9
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=9
+INSTRUMENTATION_STATUS: stream=.
+INSTRUMENTATION_STATUS: test=messageUsesSharedSurfaceAndCloseKeepsOwnerOpen
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_RESULT: stream=
+
+Time: 43.059
+There was 1 failure:
+1) longSourceListRevealsCurrentItemAndSupportsFooterNavigation(tv.luma.GlassDialogUiTest)
+Scrolling source rows must not paint over the heading: arrays first differed at element [0]; expected:<-16114652> but was:<-16445934>
+	at org.junit.internal.ComparisonCriteria.arrayEquals(ComparisonCriteria.java:78)
+	at org.junit.internal.ComparisonCriteria.arrayEquals(ComparisonCriteria.java:28)
+	at org.junit.Assert.internalArrayEquals(Assert.java:534)
+	at org.junit.Assert.assertArrayEquals(Assert.java:418)
+	at tv.luma.GlassDialogUiTest.longSourceListRevealsCurrentItemAndSupportsFooterNavigation(GlassDialogUiTest.java:66)
+	... 34 trimmed
+Caused by: java.lang.AssertionError: expected:<-16114652> but was:<-16445934>
+	at org.junit.Assert.fail(Assert.java:89)
+	at org.junit.Assert.failNotEquals(Assert.java:835)
+	at org.junit.Assert.assertEquals(Assert.java:120)
+	at org.junit.Assert.assertEquals(Assert.java:146)
+	at org.junit.internal.ExactComparisonCriteria.assertElementsEqual(ExactComparisonCriteria.java:8)
+	at org.junit.internal.ComparisonCriteria.arrayEquals(ComparisonCriteria.java:76)
+	... 39 more
+
+FAILURES!!!
+Tests run: 9,  Failures: 1
+
+
+INSTRUMENTATION_CODE: -1
