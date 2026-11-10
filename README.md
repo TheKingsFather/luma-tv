@@ -2,7 +2,7 @@
 
 A native Android TV client with an iOS-inspired glass interface and Stremio QR pairing. Version **0.5.0**. Package: `tv.luma`. Android 8.0+ (API 26), landscape, D-pad remote.
 
-Source: [TheKingsFather/luma-tv](https://github.com/TheKingsFather/luma-tv) (private).
+Source: [TheKingsFather/luma-tv](https://github.com/TheKingsFather/luma-tv).
 
 ## New in 0.5.0
 
