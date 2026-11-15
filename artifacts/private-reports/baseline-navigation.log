@@ -1,0 +1,86 @@
+INSTRUMENTATION_STATUS: class=tv.luma.NavigationPlaybackTest
+INSTRUMENTATION_STATUS: current=1
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=1
+INSTRUMENTATION_STATUS: stream=
+tv.luma.NavigationPlaybackTest:
+INSTRUMENTATION_STATUS: test=backRestoresIdenticalCardsFocusAndBothScrollAxesWithoutRequests
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=tv.luma.NavigationPlaybackTest
+INSTRUMENTATION_STATUS: current=1
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=1
+INSTRUMENTATION_STATUS: stack=java.lang.AssertionError: expected same:<tv.luma.PosterCard{ae36262 VFE...C.. ........ 2253,15-2601,299 #74}> was not:<null>
+	at org.junit.Assert.fail(Assert.java:89)
+	at org.junit.Assert.failNotSame(Assert.java:829)
+	at org.junit.Assert.assertSame(Assert.java:772)
+	at org.junit.Assert.assertSame(Assert.java:783)
+	at tv.luma.NavigationPlaybackTest.lambda$backRestoresIdenticalCardsFocusAndBothScrollAxesWithoutRequests$9(NavigationPlaybackTest.java:63)
+	at tv.luma.NavigationPlaybackTest.$r8$lambda$TpNwKwfkkPfHE2qNQzFLnZGPSv8(Unknown Source:0)
+	at tv.luma.NavigationPlaybackTest$$ExternalSyntheticLambda50.run(D8$$SyntheticClass:0)
+	at java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:487)
+	at java.util.concurrent.FutureTask.run(FutureTask.java:264)
+	at android.app.Instrumentation$SyncRunnable.run(Instrumentation.java:2420)
+	at android.os.Handler.handleCallback(Handler.java:958)
+	at android.os.Handler.dispatchMessage(Handler.java:99)
+	at android.os.Looper.loopOnce(Looper.java:205)
+	at android.os.Looper.loop(Looper.java:294)
+	at android.app.ActivityThread.main(ActivityThread.java:8222)
+	at java.lang.reflect.Method.invoke(Native Method)
+	at com.android.internal.os.RuntimeInit$MethodAndArgsCaller.run(RuntimeInit.java:585)
+	at com.android.internal.os.ZygoteInit.main(ZygoteInit.java:1061)
+
+INSTRUMENTATION_STATUS: stream=
+Error in backRestoresIdenticalCardsFocusAndBothScrollAxesWithoutRequests(tv.luma.NavigationPlaybackTest):
+java.lang.AssertionError: expected same:<tv.luma.PosterCard{ae36262 VFE...C.. ........ 2253,15-2601,299 #74}> was not:<null>
+	at org.junit.Assert.fail(Assert.java:89)
+	at org.junit.Assert.failNotSame(Assert.java:829)
+	at org.junit.Assert.assertSame(Assert.java:772)
+	at org.junit.Assert.assertSame(Assert.java:783)
+	at tv.luma.NavigationPlaybackTest.lambda$backRestoresIdenticalCardsFocusAndBothScrollAxesWithoutRequests$9(NavigationPlaybackTest.java:63)
+	at tv.luma.NavigationPlaybackTest.$r8$lambda$TpNwKwfkkPfHE2qNQzFLnZGPSv8(Unknown Source:0)
+	at tv.luma.NavigationPlaybackTest$$ExternalSyntheticLambda50.run(D8$$SyntheticClass:0)
+	at java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:487)
+	at java.util.concurrent.FutureTask.run(FutureTask.java:264)
+	at android.app.Instrumentation$SyncRunnable.run(Instrumentation.java:2420)
+	at android.os.Handler.handleCallback(Handler.java:958)
+	at android.os.Handler.dispatchMessage(Handler.java:99)
+	at android.os.Looper.loopOnce(Looper.java:205)
+	at android.os.Looper.loop(Looper.java:294)
+	at android.app.ActivityThread.main(ActivityThread.java:8222)
+	at java.lang.reflect.Method.invoke(Native Method)
+	at com.android.internal.os.RuntimeInit$MethodAndArgsCaller.run(RuntimeInit.java:585)
+	at com.android.internal.os.ZygoteInit.main(ZygoteInit.java:1061)
+
+INSTRUMENTATION_STATUS: test=backRestoresIdenticalCardsFocusAndBothScrollAxesWithoutRequests
+INSTRUMENTATION_STATUS_CODE: -2
+INSTRUMENTATION_RESULT: stream=
+
+Time: 8.294
+There was 1 failure:
+1) backRestoresIdenticalCardsFocusAndBothScrollAxesWithoutRequests(tv.luma.NavigationPlaybackTest)
+java.lang.AssertionError: expected same:<tv.luma.PosterCard{ae36262 VFE...C.. ........ 2253,15-2601,299 #74}> was not:<null>
+	at org.junit.Assert.fail(Assert.java:89)
+	at org.junit.Assert.failNotSame(Assert.java:829)
+	at org.junit.Assert.assertSame(Assert.java:772)
+	at org.junit.Assert.assertSame(Assert.java:783)
+	at tv.luma.NavigationPlaybackTest.lambda$backRestoresIdenticalCardsFocusAndBothScrollAxesWithoutRequests$9(NavigationPlaybackTest.java:63)
+	at tv.luma.NavigationPlaybackTest.$r8$lambda$TpNwKwfkkPfHE2qNQzFLnZGPSv8(Unknown Source:0)
+	at tv.luma.NavigationPlaybackTest$$ExternalSyntheticLambda50.run(D8$$SyntheticClass:0)
+	at java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:487)
+	at java.util.concurrent.FutureTask.run(FutureTask.java:264)
+	at android.app.Instrumentation$SyncRunnable.run(Instrumentation.java:2420)
+	at android.os.Handler.handleCallback(Handler.java:958)
+	at android.os.Handler.dispatchMessage(Handler.java:99)
+	at android.os.Looper.loopOnce(Looper.java:205)
+	at android.os.Looper.loop(Looper.java:294)
+	at android.app.ActivityThread.main(ActivityThread.java:8222)
+	at java.lang.reflect.Method.invoke(Native Method)
+	at com.android.internal.os.RuntimeInit$MethodAndArgsCaller.run(RuntimeInit.java:585)
+	at com.android.internal.os.ZygoteInit.main(ZygoteInit.java:1061)
+
+FAILURES!!!
+Tests run: 1,  Failures: 1
+
+
+INSTRUMENTATION_CODE: -1

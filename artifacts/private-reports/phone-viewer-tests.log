@@ -1,0 +1,13 @@
+test_archive_errors_do_not_disclose_exception_or_partial_data (__main__.PhoneViewerTests.test_archive_errors_do_not_disclose_exception_or_partial_data) ... ok
+test_browser_shell_contains_no_report_data_or_external_assets (__main__.PhoneViewerTests.test_browser_shell_contains_no_report_data_or_external_assets) ... ok
+test_cache_csp_and_no_frame_headers (__main__.PhoneViewerTests.test_cache_csp_and_no_frame_headers) ... ok
+test_host_and_origin_boundaries_are_enforced (__main__.PhoneViewerTests.test_host_and_origin_boundaries_are_enforced) ... ok
+test_no_identity_other_tailnet_members_and_forwarded_identity_are_rejected (__main__.PhoneViewerTests.test_no_identity_other_tailnet_members_and_forwarded_identity_are_rejected) ... ok
+test_owner_receives_reports (__main__.PhoneViewerTests.test_owner_receives_reports) ... ok
+test_production_rejects_insecure_or_non_tailnet_origins (__main__.PhoneViewerTests.test_production_rejects_insecure_or_non_tailnet_origins) ... ok
+test_read_only_no_file_serving_and_no_query_parameters (__main__.PhoneViewerTests.test_read_only_no_file_serving_and_no_query_parameters) ... ok
+
+----------------------------------------------------------------------
+Ran 8 tests in 0.029s
+
+OK

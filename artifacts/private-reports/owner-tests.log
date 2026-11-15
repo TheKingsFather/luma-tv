@@ -1,0 +1,9 @@
+test_decrypts_and_rejects_tampering_wrong_owner_and_truncation (__main__.OwnerToolTests.test_decrypts_and_rejects_tampering_wrong_owner_and_truncation) ... ok
+test_java_ciphertext_interoperability (__main__.OwnerToolTests.test_java_ciphertext_interoperability) ... ok
+test_private_atomic_storage (__main__.OwnerToolTests.test_private_atomic_storage) ... ok
+test_rejects_paths_secret_fields_and_invalid_durations (__main__.OwnerToolTests.test_rejects_paths_secret_fields_and_invalid_durations) ... ok
+
+----------------------------------------------------------------------
+Ran 4 tests in 0.784s
+
+OK

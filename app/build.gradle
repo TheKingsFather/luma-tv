@@ -6,14 +6,27 @@ android {
         applicationId 'tv.luma'
         minSdk 26
         targetSdk 34
-        versionCode 6
-        versionName '0.5.0'
+        versionCode 7
+        versionName '0.6.0'
         testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
     }
     compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
+    signingConfigs {
+        if (System.getenv('LUMA_SIGNING_KEYSTORE')) {
+            ownerRelease {
+                storeFile file(System.getenv('LUMA_SIGNING_KEYSTORE'))
+                storePassword System.getenv('LUMA_SIGNING_STORE_PASSWORD')
+                keyAlias System.getenv('LUMA_SIGNING_KEY_ALIAS')
+                keyPassword System.getenv('LUMA_SIGNING_KEY_PASSWORD')
+            }
+        }
+    }
     buildTypes {
         debug { applicationIdSuffix '.debug' }
-        release { minifyEnabled false; signingConfig signingConfigs.debug }
+        release {
+            minifyEnabled false
+            if (System.getenv('LUMA_SIGNING_KEYSTORE')) signingConfig signingConfigs.ownerRelease
+        }
     }
 }
 dependencies {
@@ -27,3 +40,4 @@ dependencies {
     androidTestImplementation 'androidx.test:runner:1.5.2'
     androidTestImplementation 'androidx.test.ext:junit:1.1.5'
 }
+

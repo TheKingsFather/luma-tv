@@ -12,3 +12,7 @@ artifacts/*.png
 **/captures/
 artifacts/*ui.xml
 artifacts/*host.log
+
+
+__pycache__/
+*.pyc

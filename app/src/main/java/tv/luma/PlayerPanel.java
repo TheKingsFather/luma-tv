@@ -35,15 +35,17 @@ public final class PlayerPanel {
     private FrameLayout root,controls,top;private TextView titleLabel,status,timeLabel,playButton,sourceLabel;
     private SeekBar seek;private int sourceIndex,serial=0,episodeCount=0;private boolean started,controlsVisible=true,dialogOpen,stopAtEnd=false,changingSource;
     private int sleepChoice;
-    private long watchedSinceSync,lastSample,lastPosition,sleepAt;
+    private long sleepAt,lastSync,reportStarted,reportEpoch=-1;
+    private boolean foreground=true,reportEnded;
+    private final WatchClock watchClock=new WatchClock(),reportClock=new WatchClock();
+    private String reportSession=UUID.randomUUID().toString();
     private String externalSub="";private final List<JSONObject> addonSubtitles=new ArrayList<>();
     private final Runnable hide=()->showControls(false);
     private final Runnable watchdog=()->{if(player!=null&&player.getPlaybackState()==Player.STATE_BUFFERING)failover();};
     private final Runnable ticker=new Runnable(){@Override public void run(){if(player==null)return;long now=SystemClock.elapsedRealtime();long pos=player.getCurrentPosition(),duration=player.getDuration();
-        if(player.isPlaying()&&lastSample>0){long delta=pos-lastPosition;if(delta>0&&delta<3000)watchedSinceSync+=delta;}
-        lastPosition=pos;lastSample=now;
+        sample();
         if(duration>0){timeLabel.setText(clock(pos)+"   /   "+clock(duration));if(!seek.isPressed())seek.setProgress((int)(pos*1000/duration));}
-        if(watchedSinceSync>=15000)sync(false);
+        if(now-lastSync>=15000)sync(false);
         if(sleepAt>0&&now>=sleepAt){sleepAt=0;sleepChoice=0;player.pause();showControls(true);g.notice("Sleep timer finished");}
         handler.postDelayed(this,1000);
     }};
@@ -89,7 +91,7 @@ public final class PlayerPanel {
     }
     private void prepare(long position){
         if(isFinishing())return;int token=++serial;changingSource=true;
-        if(player!=null){video.setPlayer(null);player.release();player=null;}
+        if(player!=null){sample();watchClock.update(SystemClock.elapsedRealtime(),false);reportClock.update(SystemClock.elapsedRealtime(),false);video.setPlayer(null);player.release();player=null;}
         Stream stream=request.streams.get(sourceIndex);sourceLabel.setText(stream.provider+"  ·  "+stream.name.replace('\n',' '));status.setText("Opening your source…");status.setVisibility(View.VISIBLE);
         DefaultHttpDataSource.Factory http=new DefaultHttpDataSource.Factory().setUserAgent("LumaTV/0.3").setConnectTimeoutMs(12000).setReadTimeoutMs(15000).setAllowCrossProtocolRedirects(true).setDefaultRequestProperties(stream.headers);
         DefaultDataSource.Factory data=new DefaultDataSource.Factory(activity,http);
@@ -101,7 +103,7 @@ public final class PlayerPanel {
                 else if(state==Player.STATE_BUFFERING){status.setText("Finding the perfect frame…");status.setVisibility(View.VISIBLE);handler.removeCallbacks(watchdog);handler.postDelayed(watchdog,25000);}
                 else if(state==Player.STATE_ENDED){sync(true);if(liveType(request.title.type)){finish();return;}if(stopAtEnd){finish();return;}if(app.settings.getBoolean("autoplay",true)&&nextVideo()!=null)nextEpisode(true);else{showControls(true);status.setText("That’s a wrap.");status.setVisibility(View.VISIBLE);}}
             }
-            @Override public void onIsPlayingChanged(boolean playing){playButton.setText(playing?"Ⅱ  Pause":"▶  Play");if(miniPlay!=null)miniPlay.setText(playing?"Ⅱ":"▶");}
+            @Override public void onIsPlayingChanged(boolean playing){if(token!=serial)return;sample();playButton.setText(playing?"Ⅱ  Pause":"▶  Play");if(miniPlay!=null)miniPlay.setText(playing?"Ⅱ":"▶");}
             @Override public void onPlayerError(PlaybackException error){if(token==serial)failover();}
         });
         MediaItem.Builder item=new MediaItem.Builder().setUri(stream.url).setMediaMetadata(new MediaMetadata.Builder().setTitle(request.title.name).build());
@@ -114,7 +116,7 @@ public final class PlayerPanel {
             MediaSource subtitle=new SingleSampleMediaSource.Factory(subtitles).createMediaSource(item.build().localConfiguration.subtitleConfigurations.get(0),C.TIME_UNSET);
             media=new MergingMediaSource(media,subtitle);
         }
-        player.setMediaSource(media);player.seekTo(Math.max(0,position));player.prepare();player.play();lastSample=0;lastPosition=position;
+        player.setMediaSource(media);player.seekTo(Math.max(0,position));player.prepare();player.play();sample();
     }
     private void failover(){
         if(isFinishing()||dialogOpen)return;long position=player==null?0:player.getCurrentPosition();
@@ -173,9 +175,15 @@ public final class PlayerPanel {
     private Video nextVideo(){List<Video> videos=request.title.videos();for(int i=0;i<videos.size()-1;i++)if(videos.get(i).id.equals(request.videoId)){for(int j=i+1;j<videos.size();j++)if(!videos.get(j).isFuture())return videos.get(j);break;}return null;}
     private void nextEpisode(boolean automatic){Video next=nextVideo();if(next==null){g.notice("You’re all caught up");return;}
         if(automatic&&episodeCount>=2){show(new GlassDialog(g,"Still watching?","Your next episode is ready when you are.").action("Back to title",false,this::finish,false).action("Keep watching",true,()->{episodeCount=0;nextEpisode(false);},true));return;}
-        status.setText("Finding the next episode…");status.setVisibility(View.VISIBLE);final int token=++serial;Title title=request.title;app.io.execute(()->{try{StreamResult result=app.api.streams(app.addons,title,next.id,next.json.optJSONArray("streams"));handler.post(()->{if(isFinishing()||token!=serial)return;if(result.streams.isEmpty()){status.setText("No source for the next episode. Try it from the title page.");showControls(true);return;}sync(false);request=new PlayerActivity.Request(title,next.id,result.streams,0);app.playback=request;sourceIndex=0;episodeCount++;watchedSinceSync=0;externalSub="";addonSubtitles.clear();titleLabel.setText(title.name+" · S"+next.season+" E"+next.episode);prepare(app.resume(title.id,next.id));loadSubtitles();});}catch(Exception e){handler.post(()->{if(token==serial&&!isFinishing()){status.setText(StremioClient.readable(e));showControls(true);}});}});
+        status.setText("Finding the next episode…");status.setVisibility(View.VISIBLE);final int token=++serial;Title title=request.title;app.io.execute(()->{try{StreamResult result=app.api.streams(app.addons,title,next.id,next.json.optJSONArray("streams"));handler.post(()->{if(isFinishing()||token!=serial)return;if(result.streams.isEmpty()){status.setText("No source for the next episode. Try it from the title page.");showControls(true);return;}sync(false);checkpoint(true,false);watchClock.reset();reportClock.reset();reportStarted=0;reportEnded=false;reportSession=UUID.randomUUID().toString();request=new PlayerActivity.Request(title,next.id,result.streams,0);app.playback=request;sourceIndex=0;episodeCount++;externalSub="";addonSubtitles.clear();titleLabel.setText(title.name+" · S"+next.season+" E"+next.episode);prepare(app.resume(title.id,next.id));loadSubtitles();});}catch(Exception e){handler.post(()->{if(token==serial&&!isFinishing()){status.setText(StremioClient.readable(e));showControls(true);}});}});
     }
-    private void sync(boolean ended){if(player==null||request==null)return;app.progress(request.title,request.videoId,player.getCurrentPosition(),player.getDuration(),watchedSinceSync,ended);watchedSinceSync=0;}
+    private void sample(){if(player==null)return;if(reportEpoch!=app.reports.epoch()){reportEpoch=app.reports.epoch();reportClock.reset();reportStarted=0;reportEnded=false;reportSession=UUID.randomUUID().toString();}long now=SystemClock.elapsedRealtime();boolean playing=foreground&&player.isPlaying();if(playing&&app.reports.enabled()&&reportStarted==0)reportStarted=System.currentTimeMillis();watchClock.update(now,playing);reportClock.update(now,playing&&app.reports.enabled());}
+    private void checkpoint(boolean finished,boolean ended){
+        reportEnded|=ended;
+        if(reportClock.total()>0&&reportStarted==0)reportStarted=System.currentTimeMillis()-reportClock.total();
+        app.reports.checkpoint(reportSession,request.title,request.videoId,reportStarted,reportClock.total(),finished,reportEnded);
+    }
+    private void sync(boolean ended){if(player==null||request==null)return;sample();app.progress(request.title,request.videoId,player.getCurrentPosition(),player.getDuration(),watchClock.drain(),ended);checkpoint(ended,ended);lastSync=SystemClock.elapsedRealtime();}
     private void showControls(boolean show){if(mini){controlsVisible=false;return;}if(dialogOpen&&!show)return;controlsVisible=show;controls.setVisibility(show?View.VISIBLE:View.INVISIBLE);top.setVisibility(show?View.VISIBLE:View.INVISIBLE);if(show){playButton.requestFocus();delayHide();}}
     private void delayHide(){handler.removeCallbacks(hide);if(isFinishing())return;if(!mini&&!dialogOpen&&player!=null&&player.getPlayWhenReady())handler.postDelayed(hide,6000);}
     public boolean dispatchKeyEvent(KeyEvent event){if(event.getAction()!=KeyEvent.ACTION_DOWN)return false;int code=event.getKeyCode();if(dialogOpen)return false;
@@ -191,8 +199,9 @@ public final class PlayerPanel {
     }
     private void seekBy(long delta){if(player!=null)player.seekTo(Math.max(0,player.getCurrentPosition()+delta));}
     public void onBackPressed(){if(controlsVisible&&player!=null&&player.isPlaying())showControls(false);else finish();}
-    public void onResume(){if(player==null)return;if(backgroundWasPlaying){backgroundWasPlaying=false;player.play();}if(player.getPlaybackState()==Player.STATE_BUFFERING){handler.removeCallbacks(watchdog);handler.postDelayed(watchdog,25000);}delayHide();}
-    public void onStop(){if(player!=null){backgroundWasPlaying=player.getPlayWhenReady();sync(false);player.pause();lastSample=0;handler.removeCallbacks(hide);handler.removeCallbacks(watchdog);}}
-    public void release(){if(closed)return;sync(false);closed=true;serial++;for(Dialog dialog:new ArrayList<>(dialogs))if(dialog.isShowing())dialog.dismiss();dialogs.clear();dialogOpen=false;handler.removeCallbacksAndMessages(null);if(player!=null){video.setPlayer(null);player.release();player=null;}root.setKeepScreenOn(false);app.playback=null;}
+    public void onResume(){foreground=true;if(player==null)return;sample();if(backgroundWasPlaying){backgroundWasPlaying=false;player.play();}if(player.getPlaybackState()==Player.STATE_BUFFERING){handler.removeCallbacks(watchdog);handler.postDelayed(watchdog,25000);}delayHide();}
+    public void onStop(){sample();foreground=false;if(player!=null){backgroundWasPlaying=player.getPlayWhenReady();sync(false);player.pause();handler.removeCallbacks(hide);handler.removeCallbacks(watchdog);}}
+    public void release(){if(closed)return;sync(false);checkpoint(true,false);closed=true;serial++;for(Dialog dialog:new ArrayList<>(dialogs))if(dialog.isShowing())dialog.dismiss();dialogs.clear();dialogOpen=false;handler.removeCallbacksAndMessages(null);if(player!=null){video.setPlayer(null);player.release();player=null;}root.setKeepScreenOn(false);app.playback=null;}
     private static String clock(long ms){long sec=Math.max(0,ms/1000);return sec>=3600?String.format(Locale.US,"%d:%02d:%02d",sec/3600,sec/60%60,sec%60):String.format(Locale.US,"%02d:%02d",sec/60,sec%60);}
 }
+
