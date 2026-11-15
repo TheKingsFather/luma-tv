@@ -14,6 +14,11 @@ tunnel; no reporting port is exposed to the LAN. Settings can pause reporting
 or revoke the owner and delete the TV archive. Stremio watch-state sync remains
 separate. See [setup, security and deployment](docs/private-reports.md).
 
+An [iPhone viewer](docs/iphone-reports.md) displays your collected reports in
+Safari over private HTTPS, restricted to your Tailscale login. The decryption
+key stays on Fedora. It requires one-time phone/computer sign-in and an awake,
+logged-in computer; it does not publish viewing history to a public website.
+
 The source update requires the original Android signing keystore to replace
 the installed 0.5.0 app. Release builds stay unsigned unless its signing
 configuration is supplied. Debug fixtures use a separate Luma TV Preview app.

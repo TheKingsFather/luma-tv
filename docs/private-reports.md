@@ -70,6 +70,9 @@ keyring securely; losing either prevents reading existing reports.
 
 ## Security boundary
 
+For owner-only iPhone access without copying the decryption key, see the
+[private Safari viewer](iphone-reports.md).
+
 The TV has only the owner's RSA public key. Each checkpoint uses a fresh
 AES-256-GCM key/nonce, with the AES key wrapped using RSA-OAEP SHA-256/MGF1
 SHA-256 (3072 bits minimum). The versioned envelope/header is authenticated.

@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#07161b">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Luma Reports">
+  <title>Luma · Your viewing</title>
+  <link rel="icon" type="image/svg+xml" href="/mark.svg">
+  <link rel="stylesheet" href="/style.css">
+  <script src="/app.js" defer></script>
+</head>
+<body>
+  <main>
+    <header class="topbar"><a class="brand" href="/" aria-label="Luma Reports home"><img src="/mark.svg" alt="" width="34" height="34"><span>LUMA <small>REPORTS</small></span></a><span class="privacy"><span></span>Only you</span></header>
+    <section class="intro"><p class="eyebrow">YOUR PRIVATE SCREEN TIME</p><h1>A little look<br>at what you watched.</h1><p class="subtitle">Your titles. Your time. Kept with you.</p></section>
+    <div id="notice" class="notice" hidden></div>
+    <section id="locked" class="state" hidden><span class="lock-icon" aria-hidden="true">◇</span><h2>Your viewing stays private.</h2><p>Connect Tailscale on your iPhone and sign in with the same account as your computer, then try again.</p><button id="retry" class="primary">Try again</button></section>
+    <section id="content">
+      <nav class="periods" aria-label="Viewing period"><button data-period="1">Today</button><button data-period="7" class="active" aria-pressed="true">7 days</button><button data-period="30">30 days</button><button data-period="90">90 days</button></nav>
+      <section class="summary" aria-label="Viewing summary"><div><span class="metric-label">TIME WATCHED</span><strong id="total">—</strong><span class="metric-note">Active playback only</span></div><div><span class="metric-label">SESSIONS</span><strong id="sessions">—</strong><span class="metric-note" id="titles">Loading your reports</span></div></section>
+      <div class="history-heading"><h2>Viewing history</h2><button id="refresh" class="refresh" aria-label="Refresh reports">↻</button></div>
+      <label class="search"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10" cy="10" r="6.5"/><path d="m15 15 5 5"/></svg><input id="search" type="search" placeholder="Find a title or channel" autocomplete="off" aria-label="Search viewing history"></label>
+      <nav class="types" aria-label="Content type"><button data-type="all" class="active" aria-pressed="true">All</button><button data-type="movie">Movies</button><button data-type="series">Series</button><button data-type="live">Live</button></nav>
+      <div id="loading" class="state"><p>Opening your private reports…</p></div>
+      <div id="empty" class="state" hidden><h3>Room for your next watch.</h3><p>No sessions match this view. Try another period or title.</p></div>
+      <section id="history" aria-live="polite" aria-label="Watched titles"></section>
+      <p class="updated" id="updated"></p>
+    </section>
+    <footer><span class="footer-mark">◈</span><p>Encrypted on your computer.<br>No ads. No shared viewing history.</p><span class="retention">90-day history</span></footer>
+  </main>
+  <template id="row"><article class="report"><div class="art" aria-hidden="true"></div><div class="report-body"><h3></h3><p class="details"></p><p class="saved"></p></div><div class="duration"><strong></strong><span>watched</span></div></article></template>
+</body>
+</html>
