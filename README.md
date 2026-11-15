@@ -1,8 +1,22 @@
 # Luma TV
 
-A native Android TV client with an iOS-inspired glass interface and Stremio QR pairing. Version **0.5.0**. Package: `tv.luma`. Android 8.0+ (API 26), landscape, D-pad remote.
+A native Android TV client with an iOS-inspired glass interface and Stremio QR pairing. Source version **0.6.0**. Package: `tv.luma`. Android 8.0+ (API 26), landscape, D-pad remote.
 
 Source: [TheKingsFather/luma-tv](https://github.com/TheKingsFather/luma-tv).
+
+## Private viewing reports in 0.6.0
+
+Owner-paired reports record titles/channels, episodes and active viewing time,
+with pauses, buffering, seeking and background time excluded. The TV stores
+encrypted snapshots that only the paired computer can decrypt, and report
+requests require its private-key signature. Collection uses a private ADB
+tunnel; no reporting port is exposed to the LAN. Settings can pause reporting
+or revoke the owner and delete the TV archive. Stremio watch-state sync remains
+separate. See [setup, security and deployment](docs/private-reports.md).
+
+The source update requires the original Android signing keystore to replace
+the installed 0.5.0 app. Release builds stay unsigned unless its signing
+configuration is supplied. Debug fixtures use a separate Luma TV Preview app.
 
 ## New in 0.5.0
 
@@ -88,7 +102,7 @@ The project uses Gradle 8.9, Android Gradle Plugin 8.5.2, JDK 17+ and Android SD
 ./gradlew :app:testDebugUnitTest :app:lintDebug
 ```
 
-The release variant currently uses the local development signing key for sideload testing. Preserve that key to update this installation. It is not configured for Play Store publishing.
+Release signing requires the original keystore through the `LUMA_SIGNING_*` environment variables described in [private report deployment](docs/private-reports.md). Without it, the release APK is unsigned. This is not configured for Play Store publishing.
 
 Install:
 
@@ -184,3 +198,4 @@ References used for the protocol and player:
 - [Stremio linking/API request definitions](https://stremio.github.io/stremio-core/src/stremio_core/types/api/request.rs.html)
 - [Stream objects and request headers](https://stremio.github.io/stremio-addon-sdk/api/responses/stream.html)
 - [Android Media3 player lifecycle](https://developer.android.com/media/media3/exoplayer/hello-world)
+

@@ -22,6 +22,7 @@ public final class LumaApp extends Application {
     public SharedPreferences settings;
     public volatile PlayerActivity.Request playback;
     private SessionStore vault;
+    public PrivateReports reports;
     @Override public void onCreate(){super.onCreate();vault=new SessionStore(this);settings=getSharedPreferences("preferences",MODE_PRIVATE);
         try{
             String raw=vault.get("session");if(!raw.isEmpty()){JSONObject j=new JSONObject(raw);authKey=text(j,"key");accountName=text(j,"name");}
@@ -29,6 +30,7 @@ public final class LumaApp extends Application {
             String stored=vault.get("library");if(!stored.isEmpty())for(JSONObject j:objects(new JSONArray(stored)))library.put(text(j,"_id"),j);
             String queue=vault.get("pending");if(!queue.isEmpty())for(JSONObject j:objects(new JSONArray(queue)))pending.put(text(j,"_id"),j);
         }catch(Exception e){sessionUnreadable=true;authKey="";addons=Collections.emptyList();}
+        reports=new PrivateReports(this);
     }
     public boolean connected(){return !authKey.isEmpty();}
     public void connect(String key) throws Exception {
@@ -99,3 +101,4 @@ public final class LumaApp extends Application {
     }
     static String now(){SimpleDateFormat f=new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'",Locale.US);f.setTimeZone(TimeZone.getTimeZone("UTC"));return f.format(new Date());}
 }
+

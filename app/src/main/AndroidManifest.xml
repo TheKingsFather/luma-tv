@@ -17,5 +17,8 @@
         </activity>
         <activity android:name=".PlayerActivity" android:exported="false" android:screenOrientation="landscape"
             android:configChanges="keyboard|keyboardHidden|navigation|orientation|screenSize" />
+        <activity android:name=".ReportSetupActivity" android:exported="true" android:permission="android.permission.DUMP"
+            android:screenOrientation="landscape" />
     </application>
 </manifest>
+
