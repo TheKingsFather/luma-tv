@@ -99,7 +99,7 @@ public final class PlayerPanel {
         for(TextView badge:new TextView[]{qualityLabel,miniQuality}){if(!label.contentEquals(badge.getText()))badge.setText(label);badge.setContentDescription(detail);}
     }
     private void prepare(long position){
-        if(isFinishing())return;int token=++serial;changingSource=true;
+        if(isFinishing())return;int token=++serial;changingSource=true;handler.removeCallbacks(hide);
         if(player!=null){video.setPlayer(null);player.release();player=null;}
         updateResolution(VideoSize.UNKNOWN);
         Stream stream=request.streams.get(sourceIndex);sourceLabel.setText(stream.provider+"  ·  "+stream.name.replace('\n',' '));status.setText("Opening your source…");status.setVisibility(View.VISIBLE);
@@ -115,7 +115,11 @@ public final class PlayerPanel {
             }
             @Override public void onVideoSizeChanged(VideoSize size){if(token==serial&&!isFinishing())updateResolution(size);}
             @Override public void onTracksChanged(Tracks tracks){if(token==serial&&!isFinishing()&&!tracks.isTypeSelected(C.TRACK_TYPE_VIDEO))updateResolution(VideoSize.UNKNOWN);}
-            @Override public void onIsPlayingChanged(boolean playing){playButton.setText(playing?"Ⅱ  Pause":"▶  Play");if(miniPlay!=null)miniPlay.setText(playing?"Ⅱ":"▶");}
+            @Override public void onIsPlayingChanged(boolean playing){
+                if(token!=serial||isFinishing())return;
+                playButton.setText(playing?"Ⅱ  Pause":"▶  Play");if(miniPlay!=null)miniPlay.setText(playing?"Ⅱ":"▶");
+                delayHide();
+            }
             @Override public void onPlayerError(PlaybackException error){if(token==serial){updateResolution(VideoSize.UNKNOWN);failover();}}
         });
         MediaItem.Builder item=new MediaItem.Builder().setUri(stream.url).setMediaMetadata(new MediaMetadata.Builder().setTitle(request.title.name).build());
@@ -192,7 +196,7 @@ public final class PlayerPanel {
     }
     private void sync(boolean ended){if(player==null||request==null)return;app.progress(request.title,request.videoId,player.getCurrentPosition(),player.getDuration(),watchedSinceSync,ended);watchedSinceSync=0;}
     private void showControls(boolean show){if(mini){controlsVisible=false;return;}if(dialogOpen&&!show)return;controlsVisible=show;controls.setVisibility(show?View.VISIBLE:View.INVISIBLE);top.setVisibility(show?View.VISIBLE:View.INVISIBLE);if(show){playButton.requestFocus();delayHide();}}
-    private void delayHide(){handler.removeCallbacks(hide);if(isFinishing())return;if(!mini&&!dialogOpen&&player!=null&&player.getPlayWhenReady())handler.postDelayed(hide,6000);}
+    private void delayHide(){handler.removeCallbacks(hide);if(isFinishing())return;if(!mini&&controlsVisible&&!dialogOpen&&player!=null&&player.isPlaying())handler.postDelayed(hide,6000);}
     public boolean dispatchKeyEvent(KeyEvent event){if(event.getAction()!=KeyEvent.ACTION_DOWN)return false;int code=event.getKeyCode();if(dialogOpen)return false;
         if(code==KeyEvent.KEYCODE_P||code==KeyEvent.KEYCODE_WINDOW){if(mini)activity.restorePlayer();else activity.miniPlayer();return true;}
         if(code==KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE||code==KeyEvent.KEYCODE_MEDIA_PLAY||code==KeyEvent.KEYCODE_MEDIA_PAUSE){if(player!=null){player.setPlayWhenReady(code==KeyEvent.KEYCODE_MEDIA_PLAY||code==KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE&&!player.getPlayWhenReady());showControls(true);}return true;}

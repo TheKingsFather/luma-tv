@@ -1,0 +1,45 @@
+Luma TV 0.6.1 / versionCode 8 / package tv.luma
+
+Regression reproduction
+- The new channelPlaybackHidesControlsWithoutRemoteInput device test failed
+  against 0.6.0 with: Playback controls did not hide without moving focus.
+- Real local video was playing, the Pause button had focus, and no remote input
+  was sent before checking the fade timeout.
+- Reproduction output: controls-reproduction-0.6.0.log.
+
+Fix
+- Arm the six-second timer when actual playback starts or resumes.
+- Cancel the previous timer when changing sources.
+- Only schedule fading for visible full-player controls while playing and with
+  no player dialog open; pausing cancels the timer.
+- Ignore playing-state callbacks from replaced or released players.
+
+Build and static checks
+- ./gradlew --no-daemon :app:testDebugUnitTest :app:lintDebug :app:assembleRelease :app:assembleDebug :app:assembleDebugAndroidTest
+- BUILD SUCCESSFUL; 37 JVM tests, zero failures/errors/skips; Android lint passed.
+
+Device checks: Xiaomi MiTV_MZTU0, separate unpaired debug package
+- PlayerControlsTest and ResolutionPlaybackTest: OK (6 tests), 66.644 seconds.
+- Channel controls hide without remote input, including the focused highlight.
+- First OK reveals controls without pausing, and the controls fade again.
+- Remote pause keeps controls visible past the fade timeout; remote resume
+  restarts the timer and controls disappear.
+- Opening a player menu prevents fading, including while playback is paused
+  and resumed behind the menu. Closing it restarts the fade timer.
+- Existing real 1080p, 1440p and 2160p decoder checks, full/mini transitions,
+  audio-only source changes, and resolution cleanup all passed again.
+- Output: device-player-tests-0.6.1.log.
+
+Package checks
+- APK signature verified; signing certificate matches the installed 0.6.0 APK.
+- ZIP CRC, four-byte alignment and package/version metadata passed.
+- APK SHA-256:
+  9b353c2cacbe506b182cfc79adff58934a9734891964fd15077b4fead0db713b
+- Installed on the Xiaomi TV with adb install -r; package manager reports
+  versionName 0.6.1 / versionCode 8. The original first-install time is unchanged,
+  confirming this was an in-place update. Temporary debug packages were removed.
+
+Limits
+- Playback fixtures use generated local media and a looping channel. No real
+  provider account was used in the debug package; provider/network-specific
+  buffering behavior was not separately exercised.

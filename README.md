@@ -1,8 +1,24 @@
 # Luma TV
 
-A native Android TV client with an iOS-inspired glass interface and Stremio QR pairing. Version **0.6.0**. Package: `tv.luma`. Android 8.0+ (API 26), landscape, D-pad remote.
+A native Android TV client with an iOS-inspired glass interface and Stremio QR pairing. Version **0.6.1**. Package: `tv.luma`. Android 8.0+ (API 26), landscape, D-pad remote.
 
 Source: [TheKingsFather/luma-tv](https://github.com/TheKingsFather/luma-tv).
+
+## New in 0.6.1
+
+The full player's controls now fade automatically six seconds after a channel
+starts playing, even while Pause has remote focus. The first OK press reveals
+hidden controls; the next press operates the focused button. Pausing or opening
+a player menu keeps the controls visible. Resuming playback or closing the menu
+starts the fade timer again, and switching sources cancels the old timer.
+
+This fixes a timer that was checked before the player existed and was not
+started when playback began. Version 0.6.1 uses the same signing key as 0.6.0
+and installs over it with `adb install -r`.
+
+The no-input regression was reproduced on 0.6.0, then passed on 0.6.1. All 37
+JVM tests, Android lint and six TV playback checks passed. See
+`artifacts/VALIDATION-0.6.1.txt` for the checks and their limits.
 
 ## New in 0.6.0
 
@@ -116,7 +132,7 @@ Install:
 
 ```bash
 adb connect 192.168.1.8:5555
-adb -s 192.168.1.8:5555 install -r artifacts/Luma-TV-0.6.0.apk
+adb -s 192.168.1.8:5555 install -r artifacts/Luma-TV-0.6.1.apk
 ```
 
 ## Implementation map
