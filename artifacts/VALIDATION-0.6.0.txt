@@ -1,0 +1,43 @@
+Luma TV 0.6.0 / versionCode 7 / package tv.luma
+
+Build and static checks
+- ./gradlew --no-daemon :app:testDebugUnitTest :app:lintDebug :app:assembleRelease :app:assembleDebug :app:assembleDebugAndroidTest
+- BUILD SUCCESSFUL; 37 JVM tests, zero failures/errors/skips; Android lint passed.
+- Media3 remains pinned to 1.3.1. Android API 26 minimum / API 34 target.
+
+Device playback checks
+- Xiaomi MiTV_MZTU0, separate unpaired tv.luma.debug package.
+- adb shell am instrument -w -r -e class tv.luma.ResolutionPlaybackTest tv.luma.debug.test/androidx.test.runner.AndroidJUnitRunner
+- OK (3 tests), 23.074 seconds.
+- Real H.264 decoder output: 1920 x 1080 -> 1080p, 2560 x 1440 -> 1440p,
+  and 3840 x 2160 -> 2160p. Changing media on the same engine updated both badges.
+- A deliberately misleading source name (Advertised 8K) did not affect the badge.
+- Three full/mini transitions retained the same engine and current resolution.
+- The mini badge remained visible, within its panel, and did not overlap controls.
+- Switching through the source menu to generated audio-only media immediately
+  cleared both previous video badges and kept them unavailable after playback began.
+- End-of-playback and player release cleared the last known resolution.
+- Full and mini fixture screenshots were visually inspected.
+
+Packaging and installation
+- APK signature verified (v2); ZIP CRC and four-byte resource alignment checks passed.
+- Package metadata verified as tv.luma, versionName 0.6.0, versionCode 7.
+- The original signing key was unavailable. With owner authorization, the older
+  release was uninstalled and the newly signed 0.6.0 APK was installed successfully.
+- The TV package manager reports versionName=0.6.0 / versionCode=7 after installation.
+- New certificate SHA-256:
+  2e02fc0f9ec7d9f8c01718d95714a53ed662231ed25bae22f845ca4c8447b4ce
+- The new keystore is retained locally; no private signing key is in the repository.
+- APK SHA-256:
+  217203179804da5830a93644c81c66088481728f7008752b31a5ce6b6c7e32cc
+
+Limits
+- Test media is generated color video and silent audio. No account was paired in
+  the debug package. Real provider playback and adaptive HLS/DASH transitions were
+  not separately exercised. Production Stremio pairing is required after reinstall.
+
+Fixture generation
+- FFmpeg color sources: 1920x1080, 2560x1440, 3840x2160, 24 fps, 8 seconds;
+  libx264 / ultrafast / CRF 32 / yuv420p / faststart, no audio.
+- Audio-only fixture: anullsrc, mono 44100 Hz, 8 seconds, AAC.
+- Fixtures exist only in androidTest assets and are not bundled in the release APK.

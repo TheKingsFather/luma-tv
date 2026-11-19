@@ -1,8 +1,30 @@
 # Luma TV
 
-A native Android TV client with an iOS-inspired glass interface and Stremio QR pairing. Version **0.5.0**. Package: `tv.luma`. Android 8.0+ (API 26), landscape, D-pad remote.
+A native Android TV client with an iOS-inspired glass interface and Stremio QR pairing. Version **0.6.0**. Package: `tv.luma`. Android 8.0+ (API 26), landscape, D-pad remote.
 
 Source: [TheKingsFather/luma-tv](https://github.com/TheKingsFather/luma-tv).
+
+## New in 0.6.0
+
+The full player and mini player show the current decoded video resolution, such
+as **1080p**, **1440p** or **2160p**, matching the Fedora player. The badges follow
+video-size changes during playback and keep the same value when switching
+between full and mini mode. Accessibility descriptions include the complete
+pixel dimensions. Unavailable resolution appears as **—**; changing sources,
+ending playback or stopping the player clears the previous value.
+
+The resolution comes from Media3's current video size, independently of the
+source's advertised quality or the TV's display resolution.
+
+The provided 0.6.0 APK uses a new signing certificate. To replace an installation
+signed with the previous key, uninstall the old Luma TV app first, install the
+new APK, then pair Stremio again. Uninstalling removes the TV's local connection
+and preferences. Later updates signed with this new key can use `adb install -r`.
+
+Release/debug builds, all 37 JVM tests and Android lint passed. Three new device
+tests passed on the Xiaomi TV, covering real 1080p/1440p/2160p decoding, full/mini
+transitions, audio-only source changes and playback cleanup. See
+`artifacts/VALIDATION-0.6.0.txt` for the checks and their limits.
 
 ## New in 0.5.0
 
@@ -94,7 +116,7 @@ Install:
 
 ```bash
 adb connect 192.168.1.8:5555
-adb -s 192.168.1.8:5555 install -r artifacts/Luma-TV-0.5.0.apk
+adb -s 192.168.1.8:5555 install -r artifacts/Luma-TV-0.6.0.apk
 ```
 
 ## Implementation map

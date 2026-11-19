@@ -307,7 +307,7 @@ public final class MainActivity extends Activity {
         TextView language=g.button("Audio language: "+app.settings.getString("audioLanguage","en"),false,()->showAudioLanguages());prefs.addView(language,new LinearLayout.LayoutParams(-1,g.u(47)));g.spacer(prefs,11);
         prefs.addView(g.button("View connected add-ons",false,this::showAddons),new LinearLayout.LayoutParams(-1,g.u(47)));
         g.at(root,prefs,595,356,590,207);
-        TextView note=g.text("Luma TV  0.5.0   ·   Glass, made for your big screen.",13,Glass.MUTED,false);g.at(root,note,1000,26,58,612);footer("Add or configure providers in Stremio on your phone, then refresh them here.");connect.requestFocus();
+        TextView note=g.text("Luma TV  0.6.0   ·   Glass, made for your big screen.",13,Glass.MUTED,false);g.at(root,note,1000,26,58,612);footer("Add or configure providers in Stremio on your phone, then refresh them here.");connect.requestFocus();
     }
     private void showAudioLanguages(){
         String[] codes={"en","fr","es","de","pt","hi","it"};

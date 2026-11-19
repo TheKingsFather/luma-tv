@@ -24,7 +24,7 @@ public final class PlayerPanel {
     private boolean closed,mini,backgroundWasPlaying;
     private final List<Dialog> dialogs=new ArrayList<>();
     private FrameLayout miniBar;
-    private TextView miniPlay;
+    private TextView miniPlay,qualityLabel,miniQuality;
     private boolean isFinishing(){return closed||activity.isFinishing()||activity.isDestroyed();}
     private void finish(){activity.stopPlayer();}
     public FrameLayout view(){return root;}
@@ -70,7 +70,8 @@ public final class PlayerPanel {
         TextView miniButton=g.button("Mini player",false,activity::miniPlayer);g.at(top,miniButton,180,46,967,15);
         status=g.text("Opening your source…",18,Glass.MINT,true);status.setGravity(Gravity.CENTER);g.at(root,status,1020,72,130,305);
         controls=new FrameLayout(activity);g.material(controls,28);g.at(root,controls,1168,144,56,535);
-        seek=new SeekBar(activity);seek.setMax(1000);seek.setProgressTintList(android.content.res.ColorStateList.valueOf(Glass.MINT));seek.setThumbTintList(android.content.res.ColorStateList.valueOf(Glass.MINT));g.at(controls,seek,1106,33,31,14);
+        seek=new SeekBar(activity);seek.setMax(1000);seek.setProgressTintList(android.content.res.ColorStateList.valueOf(Glass.MINT));seek.setThumbTintList(android.content.res.ColorStateList.valueOf(Glass.MINT));g.at(controls,seek,1008,33,31,14);
+        qualityLabel=resolutionBadge(15,"luma.resolution.full");g.material(qualityLabel,10);g.at(controls,qualityLabel,84,33,1053,14);
         seek.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener(){boolean user;public void onStartTrackingTouch(SeekBar b){user=true;handler.removeCallbacks(hide);}public void onStopTrackingTouch(SeekBar b){user=false;delayHide();}public void onProgressChanged(SeekBar b,int p,boolean fromUser){if(fromUser&&player!=null&&player.getDuration()>0){player.seekTo(player.getDuration()*p/1000);delayHide();}}});
         playButton=g.button("Ⅱ  Pause",false,()->{if(player!=null){player.setPlayWhenReady(!player.getPlayWhenReady());delayHide();}});g.at(controls,playButton,145,47,28,68);
         timeLabel=g.text("00:00   /   --:--",15,Glass.WHITE,false);timeLabel.setGravity(Gravity.CENTER_VERTICAL);g.at(controls,timeLabel,210,46,194,68);
@@ -82,14 +83,25 @@ public final class PlayerPanel {
         miniPlay=g.button("Ⅱ",false,()->{if(player!=null)player.setPlayWhenReady(!player.getPlayWhenReady());});miniPlay.setPadding(0,0,0,0);miniPlay.setContentDescription("Pause or resume");g.at(miniBar,miniPlay,50,40,6,4);
         TextView rewind=g.button("−10",false,()->seekBy(-10000));rewind.setPadding(0,0,0,0);g.at(miniBar,rewind,54,40,62,4);
         TextView forward=g.button("+10",false,()->seekBy(10000));forward.setPadding(0,0,0,0);g.at(miniBar,forward,54,40,122,4);
-        TextView mute=g.button("Mute",false,()->{if(player!=null){boolean muted=player.getVolume()>0;player.setVolume(muted?0:1);((TextView)miniBar.findViewWithTag("mute")).setText(muted?"Sound":"Mute");}});mute.setTag("mute");mute.setPadding(0,0,0,0);g.at(miniBar,mute,68,40,182,4);
-        TextView restore=g.button("↗",false,activity::restorePlayer);restore.setPadding(0,0,0,0);restore.setContentDescription("Restore full player");g.at(miniBar,restore,70,40,256,4);
-        TextView close=g.button("×",false,this::finish);close.setPadding(0,0,0,0);close.setContentDescription("Stop mini player");g.at(miniBar,close,70,40,332,4);
+        TextView mute=g.button("Mute",false,()->{if(player!=null){boolean muted=player.getVolume()>0;player.setVolume(muted?0:1);((TextView)miniBar.findViewWithTag("mute")).setText(muted?"Sound":"Mute");}});mute.setTag("mute");mute.setPadding(0,0,0,0);g.at(miniBar,mute,62,40,182,4);
+        miniQuality=resolutionBadge(12,"luma.resolution.mini");g.at(miniBar,miniQuality,68,40,250,4);
+        TextView restore=g.button("↗",false,activity::restorePlayer);restore.setPadding(0,0,0,0);restore.setContentDescription("Restore full player");g.at(miniBar,restore,40,40,324,4);
+        TextView close=g.button("×",false,this::finish);close.setPadding(0,0,0,0);close.setContentDescription("Stop mini player");g.at(miniBar,close,40,40,370,4);
         playButton.requestFocus();delayHide();
+    }
+    private TextView resolutionBadge(float size,String tag){
+        TextView badge=g.text("—",size,Glass.MINT,true);badge.setTag(tag);badge.setGravity(Gravity.CENTER);badge.setMaxLines(1);badge.setFocusable(false);badge.setContentDescription("Video resolution unavailable");return badge;
+    }
+    private void updateResolution(VideoSize size){
+        boolean known=size.width>0&&size.height>0;
+        String label=known?size.height+"p":"—";
+        String detail=known?size.width+" × "+size.height+" · Current video resolution":"Video resolution unavailable";
+        for(TextView badge:new TextView[]{qualityLabel,miniQuality}){if(!label.contentEquals(badge.getText()))badge.setText(label);badge.setContentDescription(detail);}
     }
     private void prepare(long position){
         if(isFinishing())return;int token=++serial;changingSource=true;
         if(player!=null){video.setPlayer(null);player.release();player=null;}
+        updateResolution(VideoSize.UNKNOWN);
         Stream stream=request.streams.get(sourceIndex);sourceLabel.setText(stream.provider+"  ·  "+stream.name.replace('\n',' '));status.setText("Opening your source…");status.setVisibility(View.VISIBLE);
         DefaultHttpDataSource.Factory http=new DefaultHttpDataSource.Factory().setUserAgent("LumaTV/0.3").setConnectTimeoutMs(12000).setReadTimeoutMs(15000).setAllowCrossProtocolRedirects(true).setDefaultRequestProperties(stream.headers);
         DefaultDataSource.Factory data=new DefaultDataSource.Factory(activity,http);
@@ -99,10 +111,12 @@ public final class PlayerPanel {
             @Override public void onPlaybackStateChanged(int state){if(token!=serial)return;
                 if(state==Player.STATE_READY){started=true;changingSource=false;status.setVisibility(View.GONE);handler.removeCallbacks(watchdog);}
                 else if(state==Player.STATE_BUFFERING){status.setText("Finding the perfect frame…");status.setVisibility(View.VISIBLE);handler.removeCallbacks(watchdog);handler.postDelayed(watchdog,25000);}
-                else if(state==Player.STATE_ENDED){sync(true);if(liveType(request.title.type)){finish();return;}if(stopAtEnd){finish();return;}if(app.settings.getBoolean("autoplay",true)&&nextVideo()!=null)nextEpisode(true);else{showControls(true);status.setText("That’s a wrap.");status.setVisibility(View.VISIBLE);}}
+                else if(state==Player.STATE_ENDED){updateResolution(VideoSize.UNKNOWN);sync(true);if(liveType(request.title.type)){finish();return;}if(stopAtEnd){finish();return;}if(app.settings.getBoolean("autoplay",true)&&nextVideo()!=null)nextEpisode(true);else{showControls(true);status.setText("That’s a wrap.");status.setVisibility(View.VISIBLE);}}
             }
+            @Override public void onVideoSizeChanged(VideoSize size){if(token==serial&&!isFinishing())updateResolution(size);}
+            @Override public void onTracksChanged(Tracks tracks){if(token==serial&&!isFinishing()&&!tracks.isTypeSelected(C.TRACK_TYPE_VIDEO))updateResolution(VideoSize.UNKNOWN);}
             @Override public void onIsPlayingChanged(boolean playing){playButton.setText(playing?"Ⅱ  Pause":"▶  Play");if(miniPlay!=null)miniPlay.setText(playing?"Ⅱ":"▶");}
-            @Override public void onPlayerError(PlaybackException error){if(token==serial)failover();}
+            @Override public void onPlayerError(PlaybackException error){if(token==serial){updateResolution(VideoSize.UNKNOWN);failover();}}
         });
         MediaItem.Builder item=new MediaItem.Builder().setUri(stream.url).setMediaMetadata(new MediaMetadata.Builder().setTitle(request.title.name).build());
         MediaSource media=new DefaultMediaSourceFactory(data).createMediaSource(item.build());
@@ -118,6 +132,7 @@ public final class PlayerPanel {
     }
     private void failover(){
         if(isFinishing()||dialogOpen)return;long position=player==null?0:player.getCurrentPosition();
+        updateResolution(VideoSize.UNKNOWN);
         if(sourceIndex+1<request.streams.size()){sourceIndex++;g.notice("Trying the next source…");prepare(position);return;}
         if(player!=null)player.pause();status.setVisibility(View.GONE);showControls(true);
         show(new GlassDialog(g,"This source couldn’t play","Try another source, or check the provider in Stremio.")
@@ -193,6 +208,6 @@ public final class PlayerPanel {
     public void onBackPressed(){if(controlsVisible&&player!=null&&player.isPlaying())showControls(false);else finish();}
     public void onResume(){if(player==null)return;if(backgroundWasPlaying){backgroundWasPlaying=false;player.play();}if(player.getPlaybackState()==Player.STATE_BUFFERING){handler.removeCallbacks(watchdog);handler.postDelayed(watchdog,25000);}delayHide();}
     public void onStop(){if(player!=null){backgroundWasPlaying=player.getPlayWhenReady();sync(false);player.pause();lastSample=0;handler.removeCallbacks(hide);handler.removeCallbacks(watchdog);}}
-    public void release(){if(closed)return;sync(false);closed=true;serial++;for(Dialog dialog:new ArrayList<>(dialogs))if(dialog.isShowing())dialog.dismiss();dialogs.clear();dialogOpen=false;handler.removeCallbacksAndMessages(null);if(player!=null){video.setPlayer(null);player.release();player=null;}root.setKeepScreenOn(false);app.playback=null;}
+    public void release(){if(closed)return;sync(false);closed=true;serial++;for(Dialog dialog:new ArrayList<>(dialogs))if(dialog.isShowing())dialog.dismiss();dialogs.clear();dialogOpen=false;handler.removeCallbacksAndMessages(null);if(player!=null){video.setPlayer(null);player.release();player=null;}updateResolution(VideoSize.UNKNOWN);root.setKeepScreenOn(false);app.playback=null;}
     private static String clock(long ms){long sec=Math.max(0,ms/1000);return sec>=3600?String.format(Locale.US,"%d:%02d:%02d",sec/3600,sec/60%60,sec%60):String.format(Locale.US,"%02d:%02d",sec/60,sec%60);}
 }
