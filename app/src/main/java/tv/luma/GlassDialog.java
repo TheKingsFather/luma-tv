@@ -20,6 +20,8 @@ public final class GlassDialog extends Dialog {
     private final List<View> rows=new ArrayList<>(),buttons=new ArrayList<>();
     private View initial;
     private ScrollView scroll;
+    private TextView messageView;
+    private EditText input;
 
     public GlassDialog(Glass g,String title,String message){
         super(g.activity);this.g=g;requestWindowFeature(Window.FEATURE_NO_TITLE);
@@ -27,7 +29,7 @@ public final class GlassDialog extends Dialog {
         LinearLayout brand=g.row();brand.addView(g.icon("logo",Glass.MINT,28));g.gap(brand,10);
         TextView wordmark=g.text("LUMA",11,Glass.MINT,true);wordmark.setLetterSpacing(.2f);brand.addView(wordmark);box.addView(brand);
         g.spacer(box,18);TextView heading=g.text(title,28,Glass.WHITE,true);heading.setMaxLines(2);heading.setEllipsize(TextUtils.TruncateAt.END);box.addView(heading);
-        if(message!=null&&!message.isEmpty()){g.spacer(box,10);TextView body=g.text(message,15,Glass.MUTED,false);body.setMaxLines(4);body.setEllipsize(TextUtils.TruncateAt.END);body.setLineSpacing(g.u(4),1);box.addView(body);}
+        if(message!=null&&!message.isEmpty()){g.spacer(box,10);messageView=g.text(message,15,Glass.MUTED,false);messageView.setMaxLines(4);messageView.setEllipsize(TextUtils.TruncateAt.END);messageView.setLineSpacing(g.u(4),1);box.addView(messageView);}
         actions=g.row();actions.setGravity(Gravity.END|Gravity.CENTER_VERTICAL);
         setContentView(box);setCanceledOnTouchOutside(false);
     }
@@ -40,6 +42,13 @@ public final class GlassDialog extends Dialog {
     public static GlassDialog message(Glass g,String title,String message){return new GlassDialog(g,title,message).action("Close",false,null,true);}
     public static GlassDialog confirm(Glass g,String title,String message,String cancel,String accept,Runnable action){
         return new GlassDialog(g,title,message).action(cancel,true,null,true).action(accept,false,action,false);
+    }
+    public void messageText(String text){if(messageView!=null)messageView.setText(text);}
+    public GlassDialog input(EditText field){
+        input=field;field.setId(View.generateViewId());g.spacer(box,18);box.addView(field,new LinearLayout.LayoutParams(-1,g.u(54)));initial=field;
+        field.setOnKeyListener((view,key,event)->{if(key==KeyEvent.KEYCODE_DPAD_DOWN&&!buttons.isEmpty()){if(event.getAction()==KeyEvent.ACTION_DOWN)buttons.get(0).requestFocus();return true;}return false;});
+        field.setOnEditorActionListener((view,action,event)->{if(action!=android.view.inputmethod.EditorInfo.IME_ACTION_DONE||buttons.isEmpty())return false;((android.view.inputmethod.InputMethodManager)g.activity.getSystemService(android.content.Context.INPUT_METHOD_SERVICE)).hideSoftInputFromWindow(field.getWindowToken(),0);buttons.get(buttons.size()-1).requestFocus();return true;});
+        return this;
     }
     private void addChoices(List<Choice> choices,int selected,IntConsumer action){
         g.spacer(box,18);scroll=new ScrollView(g.activity);scroll.setVerticalScrollBarEnabled(false);scroll.setClipChildren(true);scroll.setClipToPadding(true);
@@ -74,7 +83,8 @@ public final class GlassDialog extends Dialog {
         if(g.activity.isFinishing()||g.activity.isDestroyed())return;
         super.show();Window window=getWindow();if(window!=null){window.setBackgroundDrawable(new ColorDrawable(android.graphics.Color.TRANSPARENT));window.setLayout(g.u(740),-2);window.setGravity(Gravity.CENTER);window.addFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND);window.setDimAmount(.72f);window.getDecorView().setSystemUiVisibility(g.activity.getWindow().getDecorView().getSystemUiVisibility());}
         for(int n=0;n<rows.size();n++){View row=rows.get(n);row.setNextFocusLeftId(row.getId());row.setNextFocusRightId(row.getId());row.setNextFocusUpId(rows.get(Math.max(0,n-1)).getId());row.setNextFocusDownId(n+1<rows.size()?rows.get(n+1).getId():buttons.get(0).getId());}
-        for(int n=0;n<buttons.size();n++){View button=buttons.get(n);button.setNextFocusLeftId(buttons.get(Math.max(0,n-1)).getId());button.setNextFocusRightId(buttons.get(Math.min(buttons.size()-1,n+1)).getId());button.setNextFocusDownId(button.getId());button.setNextFocusUpId(rows.isEmpty()?button.getId():rows.get(rows.size()-1).getId());}
+        for(int n=0;n<buttons.size();n++){View button=buttons.get(n);button.setNextFocusLeftId(buttons.get(Math.max(0,n-1)).getId());button.setNextFocusRightId(buttons.get(Math.min(buttons.size()-1,n+1)).getId());button.setNextFocusDownId(button.getId());button.setNextFocusUpId(rows.isEmpty()?(input==null?button.getId():input.getId()):rows.get(rows.size()-1).getId());}
+        if(input!=null&&!buttons.isEmpty()){input.setNextFocusDownId(buttons.get(0).getId());input.setNextFocusUpId(input.getId());}
         if(initial!=null){initial.requestFocus();if(scroll!=null)scroll.post(()->{if(isShowing())scroll.scrollTo(0,Math.max(0,initial.getTop()-g.u(12)));});}
     }
 }

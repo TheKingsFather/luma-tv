@@ -22,6 +22,7 @@ public final class MainActivity extends Activity {
     private Glass g;
     private FrameLayout root,shell,browser;
     private PlayerPanel playerPanel;
+    private AppUpdateScreen updates;
     private TextView returnToPlayer;
     private final Map<String,BrowsePage> browsePages=new LinkedHashMap<>();
     private BrowsePage listing;
@@ -56,7 +57,8 @@ public final class MainActivity extends Activity {
     @Override protected void onStart(){super.onStart();active=true;if(pairing&&pairPoll!=null)main.post(pairPoll);}
     @Override protected void onResume(){super.onResume();Glass.fullscreen(this);if(playerPanel!=null)playerPanel.onResume();}
     @Override protected void onStop(){super.onStop();active=false;if(playerPanel!=null)playerPanel.onStop();if(pairPoll!=null)main.removeCallbacks(pairPoll);}
-    @Override protected void onDestroy(){screen++;invalidateBrowse();if(playerPanel!=null)playerPanel.release();main.removeCallbacksAndMessages(null);if(exitDialog!=null)exitDialog.dismiss();for(Dialog dialog:new ArrayList<>(browseDialogs))dialog.dismiss();browseDialogs.clear();super.onDestroy();}
+    @Override protected void onDestroy(){screen++;invalidateBrowse();if(playerPanel!=null)playerPanel.release();if(updates!=null)updates.close();main.removeCallbacksAndMessages(null);if(exitDialog!=null)exitDialog.dismiss();for(Dialog dialog:new ArrayList<>(browseDialogs))dialog.dismiss();browseDialogs.clear();super.onDestroy();}
+    @Override protected void onActivityResult(int request,int result,Intent data){super.onActivityResult(request,result,data);if(updates!=null)updates.onResult(request,result);}
     private FrameLayout newScreen(){screen++;pairing=false;pairCode="";navFocus=null;heroTitle=null;hero=null;if(pairPoll!=null)main.removeCallbacks(pairPoll);if(listing!=null&&root==listing.root)listing.focus=root.findFocus();root=g.root();browser.removeAllViews();browser.addView(root,new FrameLayout.LayoutParams(-1,-1));return root;}
 
     private BrowsePage rememberListing(String key){
@@ -307,7 +309,8 @@ public final class MainActivity extends Activity {
         TextView language=g.button("Audio language: "+app.settings.getString("audioLanguage","en"),false,()->showAudioLanguages());prefs.addView(language,new LinearLayout.LayoutParams(-1,g.u(47)));g.spacer(prefs,11);
         prefs.addView(g.button("View connected add-ons",false,this::showAddons),new LinearLayout.LayoutParams(-1,g.u(47)));
         g.at(root,prefs,595,356,590,207);
-        TextView note=g.text("Luma TV  0.6.1   ·   Glass, made for your big screen.",13,Glass.MUTED,false);g.at(root,note,1000,26,58,612);footer("Add or configure providers in Stremio on your phone, then refresh them here.");connect.requestFocus();
+        TextView update=g.button("Check for app updates",false,()->{if(updates==null)updates=new AppUpdateScreen(this,app.updater);updates.check();});g.at(root,update,355,47,56,580);
+        TextView note=g.text("Luma TV  "+UpdatePackage.currentVersion(this)+"   ·   Glass, made for your big screen.",13,Glass.MUTED,false);g.at(root,note,740,26,440,591);footer("Add or configure providers in Stremio on your phone, then refresh them here.");connect.requestFocus();
     }
     private void showAudioLanguages(){
         String[] codes={"en","fr","es","de","pt","hi","it"};

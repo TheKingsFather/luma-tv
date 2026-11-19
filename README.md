@@ -1,8 +1,42 @@
 # Luma TV
 
-A native Android TV client with an iOS-inspired glass interface and Stremio QR pairing. Version **0.6.1**. Package: `tv.luma`. Android 8.0+ (API 26), landscape, D-pad remote.
+A native Android TV client with an iOS-inspired glass interface and Stremio QR pairing. Version **0.7.0**. Package: `tv.luma`. Android 8.0+ (API 26), landscape, D-pad remote.
 
 Source: [TheKingsFather/luma-tv](https://github.com/TheKingsFather/luma-tv).
+
+## New in 0.7.0
+
+Choose **Settings → Check for app updates** to check the latest published stable
+GitHub Release. A newer release offers a download with progress and cancellation,
+then opens Android's package installer after verification. Android may first ask
+you to allow updates from Luma TV, and always requires installation confirmation.
+The update keeps your existing Stremio connection and preferences.
+
+For this private repository, enter a GitHub token with **Contents: Read** access
+to `TheKingsFather/luma-tv` when prompted. The token is kept in memory and sent
+only to this repository's GitHub API. It is not included in the APK or saved in
+preferences. Credentials are removed when requests redirect to GitHub's asset hosts.
+
+Downloads must match the release's size and SHA-256 digest. The APK must also
+have the same package name and signing certificate, a higher version code, the
+expected version name, and support the TV's Android version. Failed or canceled
+downloads are removed. Android receives temporary read access to the update APK
+through a provider limited to the update cache directory.
+
+To publish future updates, create a stable GitHub Release tagged `vX.Y.Z` and
+attach `Luma-TV-X.Y.Z.apk` signed with the retained key. GitHub supplies the asset
+digest used by the updater. APKs committed to a branch or attached only to a pull
+request are not release updates.
+
+Release/debug builds, Android lint and all 56 JVM tests passed. Eighteen distinct
+TV checks passed, including five updater cases using signed APK fixtures and a
+live unauthenticated GitHub check. See `artifacts/VALIDATION-0.7.0.txt`.
+
+For updater device tests, first run `python3 scripts/prepare-update-fixtures.py`
+with `JAVA_HOME` and `ANDROID_HOME` set. Build the release/debug/androidTest APKs,
+then run `python3 scripts/run-updater-device-tests.py --serial TV_ADDRESS` with
+`ANDROID_HOME` set. The harness verifies fixture transfers and uses the separate
+unpaired debug package; it does not grant Android install permission.
 
 ## New in 0.6.1
 
@@ -114,8 +148,9 @@ The TV mini player stays inside Luma. Pressing Home or opening another app pause
 - Direct source discovery, provider request headers, manual source choice and automatic failover.
 - Media3 playback with seek, audio/embedded subtitle selection, add-on subtitles, next episode, still-watching prompt and sleep timer.
 - Device-bound Android Keystore encryption for account/session, configured add-on URLs, library cache and pending sync changes.
+- Verified GitHub release downloads and in-app handoff to Android's update installer.
 
-This is an initial implementation, not full Alder feature parity. It plays direct HTTP(S) video streams from your installed add-ons. Raw torrent/infoHash-only playback is not included. Playback codecs depend on the device; the native FFmpeg extension, DRM-license setup, IntroDB/chapter-skip integration, multi-profile PINs, Android TV Watch Next publishing and automatic app updates are not included in this build. Add-on installation is managed in Stremio. No Alder source or bundled assets were copied into the app.
+This is an initial implementation, not full Alder feature parity. It plays direct HTTP(S) video streams from your installed add-ons. Raw torrent/infoHash-only playback is not included. Playback codecs depend on the device; the native FFmpeg extension, DRM-license setup, IntroDB/chapter-skip integration, multi-profile PINs and Android TV Watch Next publishing are not included in this build. Add-on installation is managed in Stremio. No Alder source or bundled assets were copied into the app.
 
 ## Build
 
@@ -132,7 +167,7 @@ Install:
 
 ```bash
 adb connect 192.168.1.8:5555
-adb -s 192.168.1.8:5555 install -r artifacts/Luma-TV-0.6.1.apk
+adb -s 192.168.1.8:5555 install -r artifacts/Luma-TV-0.7.0.apk
 ```
 
 ## Implementation map

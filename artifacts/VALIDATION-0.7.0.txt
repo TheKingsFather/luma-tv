@@ -1,0 +1,55 @@
+Luma TV 0.7.0 / versionCode 9 / package tv.luma
+
+Build and JVM checks
+- Release/debug/androidTest builds and Android lint passed.
+- 56 JVM tests passed with zero failures/errors/skips (37 existing + 19 updater).
+- Updater checks include numeric versions, stable release selection, exact APK
+  asset matching, required digest/size, corrupt/truncated/oversized downloads,
+  cancellation/response cleanup, authentication errors, redirect boundaries,
+  credential stripping, redirect loops and header-injection rejection.
+- Output: build-0.7.0.log and app/build/test-results/testDebugUnitTest/.
+
+TV checks: Xiaomi MiTV_MZTU0, separate unpaired debug package
+- Full regression run: OK (18 tests), 122.054 seconds.
+- Five updater cases were rerun after final lifecycle cleanup and screenshot
+  settling changes: OK (5 tests), 36.522 seconds.
+- Live HTTPS access to the actual private GitHub release endpoint reached the
+  expected access prompt without credentials.
+- Token input supports remote Down/Up navigation and keeps access only in memory.
+- A generated, same-key 0.7.1 APK downloaded through the update flow and passed
+  Android package, version, platform and signer checks.
+- Permission denial returns to the ready screen; a simulated permission grant
+  proceeds to the install handoff. Canceling installation supports retry/later.
+- The actual install intent resolves to Android's package installer on this TV.
+  Its content URI is readable, has a temporary read grant, and exposes only the
+  update APK. Files outside the update cache cannot receive provider URIs.
+- Corrupt digests, wrong signing keys, other package names and non-newer APKs
+  were rejected before the installer. Failed downloads were deleted.
+- Back cancels a slow download, closes its response, deletes the partial file,
+  and prevents late completion from reopening a dialog.
+- Seven shared-dialog and six playback/control/resolution regressions passed.
+- Access, available-update and ready-to-install screenshots were visually reviewed.
+- Output: device-regression-tests-0.7.0.log and device-updater-tests-0.7.0.log.
+
+Package verification
+- APK signature matches the retained 0.6.0/0.6.1 signing certificate.
+- ZIP CRC, four-byte alignment, package tv.luma, version 0.7.0 / code 9 verified.
+- APK SHA-256:
+  e5d4c9cb94b669472a2b559899556a3d5a737466da86a4b33c1f67c14372fc17
+- APK fixtures and their temporary signing key are excluded from the release
+  artifact and repository. No GitHub token is embedded in the APK.
+- Installed with adb install -r on the Xiaomi TV. Package manager reports
+  versionName 0.7.0 / versionCode 9; the original first-install time is retained.
+  Temporary debug packages and their generated APK fixtures were removed.
+
+Test limits and release operation
+- The live GitHub test exercised unauthenticated private-repository access.
+  Authenticated metadata/download scenarios used deterministic transports with
+  generated APKs; no real personal access token was entered or retained.
+- Tests simulated the permission/installer host and verified Android's real
+  installer intent and file-provider access. They did not enable unknown-source
+  installation permission or confirm an installation through Android's UI.
+- Users grant Luma update permission and confirm the final install themselves.
+- The updater reads published stable GitHub Releases, not pull-request APKs.
+  Future releases need a vX.Y.Z tag and Luma-TV-X.Y.Z.apk signed with the retained
+  key. GitHub's asset SHA-256 digest is required.
