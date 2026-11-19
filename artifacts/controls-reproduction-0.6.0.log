@@ -1,0 +1,44 @@
+INSTRUMENTATION_STATUS: class=tv.luma.PlayerControlsTest
+INSTRUMENTATION_STATUS: current=1
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=1
+INSTRUMENTATION_STATUS: stream=
+tv.luma.PlayerControlsTest:
+INSTRUMENTATION_STATUS: test=channelPlaybackHidesControlsWithoutRemoteInput
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=tv.luma.PlayerControlsTest
+INSTRUMENTATION_STATUS: current=1
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=1
+INSTRUMENTATION_STATUS: stack=java.lang.AssertionError: Playback controls did not hide without moving focus
+	at org.junit.Assert.fail(Assert.java:89)
+	at tv.luma.PlayerControlsTest.waitFor(PlayerControlsTest.java:62)
+	at tv.luma.PlayerControlsTest.waitForHidden(PlayerControlsTest.java:65)
+	at tv.luma.PlayerControlsTest.channelPlaybackHidesControlsWithoutRemoteInput(PlayerControlsTest.java:70)
+
+INSTRUMENTATION_STATUS: stream=
+Error in channelPlaybackHidesControlsWithoutRemoteInput(tv.luma.PlayerControlsTest):
+java.lang.AssertionError: Playback controls did not hide without moving focus
+	at org.junit.Assert.fail(Assert.java:89)
+	at tv.luma.PlayerControlsTest.waitFor(PlayerControlsTest.java:62)
+	at tv.luma.PlayerControlsTest.waitForHidden(PlayerControlsTest.java:65)
+	at tv.luma.PlayerControlsTest.channelPlaybackHidesControlsWithoutRemoteInput(PlayerControlsTest.java:70)
+
+INSTRUMENTATION_STATUS: test=channelPlaybackHidesControlsWithoutRemoteInput
+INSTRUMENTATION_STATUS_CODE: -2
+INSTRUMENTATION_RESULT: stream=
+
+Time: 15.894
+There was 1 failure:
+1) channelPlaybackHidesControlsWithoutRemoteInput(tv.luma.PlayerControlsTest)
+java.lang.AssertionError: Playback controls did not hide without moving focus
+	at org.junit.Assert.fail(Assert.java:89)
+	at tv.luma.PlayerControlsTest.waitFor(PlayerControlsTest.java:62)
+	at tv.luma.PlayerControlsTest.waitForHidden(PlayerControlsTest.java:65)
+	at tv.luma.PlayerControlsTest.channelPlaybackHidesControlsWithoutRemoteInput(PlayerControlsTest.java:70)
+
+FAILURES!!!
+Tests run: 1,  Failures: 1
+
+
+INSTRUMENTATION_CODE: -1

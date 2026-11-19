@@ -10,6 +10,7 @@ import static tv.luma.Models.*;
 
 public final class LumaApp extends Application {
     public final StremioClient api=new StremioClient();
+    public final AppUpdater updater=new AppUpdater();
     public final ExecutorService io=Executors.newFixedThreadPool(6);
     private final ExecutorService writes=Executors.newSingleThreadExecutor();
     private final Object libraryLock=new Object();
