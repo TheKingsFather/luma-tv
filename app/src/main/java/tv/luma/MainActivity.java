@@ -52,7 +52,7 @@ public final class MainActivity extends Activity {
     private final List<Dialog> browseDialogs=new ArrayList<>();
 
 
-    @Override public void onCreate(Bundle state){super.onCreate(state);app=(LumaApp)getApplication();g=new Glass(this);shell=g.root();browser=new FrameLayout(this);shell.addView(browser,new FrameLayout.LayoutParams(-1,-1));returnToPlayer=g.button("Return to player",false,this::restorePlayer);g.at(shell,returnToPlayer,192,48,220,30);returnToPlayer.setVisibility(View.GONE);setContentView(shell);Glass.fullscreen(this);PlayerActivity.Request pending=getIntent().getBooleanExtra("playPending",false)?app.playback:null;if(app.connected()||app.guest||pending!=null)showHome("Home");else showPairing();if(pending!=null)play(pending.title,pending.videoId,pending.streams,pending.index);}
+    @Override public void onCreate(Bundle state){super.onCreate(state);app=(LumaApp)getApplication();g=new Glass(this);g.setTheme(Glass.Theme.fromPreference(app.settings.getString("theme","")),null);shell=g.root();browser=new FrameLayout(this);shell.addView(browser,new FrameLayout.LayoutParams(-1,-1));returnToPlayer=g.button("Return to player",false,this::restorePlayer);g.at(shell,returnToPlayer,192,48,220,30);returnToPlayer.setVisibility(View.GONE);setContentView(shell);Glass.fullscreen(this);PlayerActivity.Request pending=getIntent().getBooleanExtra("playPending",false)?app.playback:null;if(app.connected()||app.guest||pending!=null)showHome("Home");else showPairing();if(pending!=null)play(pending.title,pending.videoId,pending.streams,pending.index);}
     @Override protected void onNewIntent(Intent intent){super.onNewIntent(intent);setIntent(intent);if(intent.getBooleanExtra("playPending",false)&&app.playback!=null){PlayerActivity.Request p=app.playback;play(p.title,p.videoId,p.streams,p.index);}}
     @Override protected void onStart(){super.onStart();active=true;if(pairing&&pairPoll!=null)main.post(pairPoll);}
     @Override protected void onResume(){super.onResume();Glass.fullscreen(this);if(playerPanel!=null)playerPanel.onResume();}
@@ -80,6 +80,8 @@ public final class MainActivity extends Activity {
     private <T> void browseTask(BrowsePage p,Callable<T> call,Consumer<T> success,Consumer<Exception> failure){
         app.io.execute(()->{try{T result=call.call();main.post(()->{if(!isDestroyed()&&p.valid)success.accept(result);});}catch(Exception e){main.post(()->{if(!isDestroyed()&&p.valid)failure.accept(e);});}});
     }
+    Glass glass(){return g;}
+
     void play(Title title,String id,List<Stream> streams,int index){
         if(playerPanel!=null){playerPanel.release();shell.removeView(playerPanel.view());}
         playerPanel=new PlayerPanel(this,title,id,streams,index);shell.addView(playerPanel.view(),new FrameLayout.LayoutParams(-1,-1));browser.setVisibility(View.INVISIBLE);returnToPlayer.setVisibility(View.GONE);
@@ -298,7 +300,9 @@ public final class MainActivity extends Activity {
         play(title,videoId,streams,index);
     }
 
-    private void showSettings(){
+    private void showSettings(){showSettings(false);}
+
+    private void showSettings(boolean focusTheme){
         newScreen();page="Settings";brand();TextView back=g.button("←  Back",false,this::backToBrowse);g.at(root,back,130,46,1098,30);g.at(root,g.text("Make yourself at home.",36,Glass.WHITE,true),1100,60,54,115);
         LinearLayout account=g.column();g.pad(account,28,25);g.material(account,28);account.addView(g.text("YOUR STREMIO",11,Glass.MINT,true));g.spacer(account,20);account.addView(g.text(app.connected()?app.accountName:"A cinema with your name on it.",25,Glass.WHITE,true));g.spacer(account,12);account.addView(g.text(app.connected()?app.addons.size()+" connected add-ons · Library sync on":"Scan a code to bring your library and add-ons.",15,Glass.MUTED,false));g.spacer(account,25);
         TextView connect=g.button(app.connected()?"Refresh Stremio":"Connect Stremio",true,()->{if(!app.connected()){showPairing();return;}toast("Refreshing your library and add-ons…");task(()->{app.refresh();return true;},v->{toast("Stremio is up to date");invalidateBrowse();showSettings();},e->toast(StremioClient.readable(e)));});account.addView(connect,new LinearLayout.LayoutParams(-2,g.u(48)));g.spacer(account,14);
@@ -309,8 +313,25 @@ public final class MainActivity extends Activity {
         TextView language=g.button("Audio language: "+app.settings.getString("audioLanguage","en"),false,()->showAudioLanguages());prefs.addView(language,new LinearLayout.LayoutParams(-1,g.u(47)));g.spacer(prefs,11);
         prefs.addView(g.button("View connected add-ons",false,this::showAddons),new LinearLayout.LayoutParams(-1,g.u(47)));
         g.at(root,prefs,595,356,590,207);
-        TextView update=g.button("Check for app updates",false,()->{if(updates==null)updates=new AppUpdateScreen(this,app.updater);updates.check();});g.at(root,update,355,47,56,580);
-        TextView note=g.text("Luma TV  "+UpdatePackage.currentVersion(this)+"   ·   Glass, made for your big screen.",13,Glass.MUTED,false);g.at(root,note,740,26,440,591);footer("Add or configure providers in Stremio on your phone, then refresh them here.");connect.requestFocus();
+        TextView update=g.button("Check for app updates",false,()->{if(updates==null)updates=new AppUpdateScreen(this,app.updater);updates.check();});
+        g.at(root,update,510,47,56,578);
+        TextView theme=g.button("Theme · "+g.theme().label,false,this::showThemes);
+        g.at(root,theme,595,47,590,578);
+        TextView note=g.text("Luma TV  "+UpdatePackage.currentVersion(this),13,Glass.MUTED,false);
+        g.at(root,note,1000,26,58,637);
+        footer("Add or configure providers in Stremio on your phone, then refresh them here.");
+        if(focusTheme) theme.requestFocus(); else connect.requestFocus();
+    }
+    private void showThemes(){
+        Glass.Theme[] themes=Glass.Theme.values();
+        List<GlassDialog.Choice> choices=new ArrayList<>();
+        for(Glass.Theme theme:themes) choices.add(new GlassDialog.Choice(theme.label,theme.description));
+        modal(GlassDialog.choices(g,"Theme","Choose how Luma looks on this TV.",choices,g.theme().ordinal(),index->{
+            Glass.Theme theme=themes[index];
+            app.settings.edit().putString("theme",theme.name()).apply();
+            g.setTheme(theme,shell);
+            showSettings(true);
+        })).show();
     }
     private void showAudioLanguages(){
         String[] codes={"en","fr","es","de","pt","hi","it"};

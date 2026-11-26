@@ -4,10 +4,13 @@ import android.app.Instrumentation;
 import android.app.Dialog;
 import android.content.Intent;
 import android.graphics.Bitmap;
+import android.graphics.Canvas;
 import android.view.*;
 import android.widget.*;
 import androidx.media3.common.Player;
 import androidx.media3.exoplayer.ExoPlayer;
+import androidx.media3.ui.AspectRatioFrameLayout;
+import androidx.media3.ui.PlayerView;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
 import org.json.*;
@@ -51,9 +54,11 @@ public class NavigationPlaybackTest {
     private static View firstPoster(View v){if(v instanceof LinearLayout&&v.isClickable()&&v.getContentDescription()!=null)return v;if(v instanceof ViewGroup){ViewGroup g=(ViewGroup)v;for(int n=0;n<g.getChildCount();n++){View match=firstPoster(g.getChildAt(n));if(match!=null)return match;}}return null;}
     private static <T> T first(View v,Class<T> type){if(type.isInstance(v))return type.cast(v);if(v instanceof ViewGroup){ViewGroup g=(ViewGroup)v;for(int n=0;n<g.getChildCount();n++){T match=first(g.getChildAt(n),type);if(match!=null)return match;}}return null;}
     private ExoPlayer engine(){Object panel=field(activity,"playerPanel");return panel==null?null:(ExoPlayer)field(panel,"player");}
-    private void playFixture()throws Exception{
+    private void playFixture()throws Exception{playFixture("tv");}
+
+    private void playFixture(String type)throws Exception{
         clip=new File(app.getCacheDir(),"mini-player-fixture.mp4");try(InputStream in=i.getContext().getAssets().open("playback-fixture.mp4");OutputStream out=new FileOutputStream(clip)){byte[] b=new byte[8192];int n;while((n=in.read(b))!=-1)out.write(b,0,n);}
-        Title t=new Title(new JSONObject().put("id","fixture-video").put("name","Mini player verification").put("type","tv"));Stream stream=new Stream(new JSONObject().put("url",clip.toURI().toString()),"Fixture");
+        Title t=new Title(new JSONObject().put("id","fixture-video").put("name","Mini player verification").put("type",type));Stream stream=new Stream(new JSONObject().put("url",clip.toURI().toString()),"Fixture");
         onMain(()->activity.play(t,t.id,Collections.singletonList(stream),0));waitFor(()->engine()!=null&&engine().getPlaybackState()==Player.STATE_READY&&engine().getCurrentPosition()>250);
     }
     @Test public void backRestoresIdenticalCardsFocusAndBothScrollAxesWithoutRequests()throws Exception{
@@ -101,5 +106,94 @@ public class NavigationPlaybackTest {
         waitFor(()->!(Boolean)field(field(activity,"playerPanel"),"dialogOpen"));
         onMain(()->{Object panel=field(activity,"playerPanel");assertEquals(2,field(panel,"sleepChoice"));invoke(panel,"sleepMenu",new Class<?>[]{});last.set(playerDialog());activity.stopPlayer();assertFalse(last.get().isShowing());assertNull(field(activity,"playerPanel"));});
     }
+    @Test public void playbackChoicesApplyImmediatelyAndSurvivePlayerRecreation()throws Exception{
+        Map<String,?> settings=app.settings.getAll();
+        try{
+            onMain(()->app.settings.edit().remove("playbackSpeed").remove("pictureSize").apply());
+            open();
+            playFixture("movie");
+            onMain(()->{
+                ExoPlayer original=engine();
+                original.pause();
+                PlayerPanel panel=(PlayerPanel)field(activity,"playerPanel");
+                PlayerView video=first(panel.view(),PlayerView.class);
+                View button=find(panel.view(),"Playback");
+                assertNotNull(button);
+                button.performClick();
+                choose(playerDialog(),"Playback speed");
+                choose(playerDialog(),"1.5×");
+                assertEquals(1.5f,engine().getPlaybackParameters().speed,0f);
+                button.performClick();
+                choose(playerDialog(),"Picture size");
+                choose(playerDialog(),"Zoom");
+                assertEquals(AspectRatioFrameLayout.RESIZE_MODE_ZOOM,video.getResizeMode());
+                activity.miniPlayer();
+                assertEquals(AspectRatioFrameLayout.RESIZE_MODE_FIT,video.getResizeMode());
+                activity.restorePlayer();
+                assertEquals(AspectRatioFrameLayout.RESIZE_MODE_ZOOM,video.getResizeMode());
+                assertSame(original,engine());
+                assertFalse(engine().getPlayWhenReady());
+                activity.stopPlayer();
+            });
+            playFixture("movie");
+            onMain(()->{
+                assertEquals(1.5f,engine().getPlaybackParameters().speed,0f);
+                PlayerPanel panel=(PlayerPanel)field(activity,"playerPanel");
+                assertEquals(AspectRatioFrameLayout.RESIZE_MODE_ZOOM,first(panel.view(),PlayerView.class).getResizeMode());
+                activity.stopPlayer();
+            });
+            playFixture("tv");
+            onMain(()->assertEquals(1f,engine().getPlaybackParameters().speed,0f));
+        }finally{
+            onMain(()->{
+                android.content.SharedPreferences.Editor editor=app.settings.edit();
+                for(String key:new String[]{"playbackSpeed","pictureSize"}){
+                    if(settings.containsKey(key)) editor.putInt(key,(Integer)settings.get(key));
+                    else editor.remove(key);
+                }
+                editor.apply();
+            });
+        }
+    }
+
+    @Test public void themePickerRepaintsBrowseAndRestoresSelectionOnStartup()throws Exception{
+        String saved=app.settings.getString("theme",null);
+        try{
+            onMain(()->app.settings.edit().remove("theme").apply());
+            open();
+            onMain(()->{
+                View originalBrowse=root();
+                assertEquals(Glass.Theme.AURORA,activity.glass().theme());
+                int aurora=ambientPixel(originalBrowse);
+                find(root(),"⚙").performClick();
+                find(root(),"Theme · Aurora").performClick();
+                List<?> dialogs=(List<?>)field(activity,"browseDialogs");
+                choose((Dialog)dialogs.get(dialogs.size()-1),"Ember");
+                assertEquals(Glass.Theme.EMBER,activity.glass().theme());
+                assertTrue(find(root(),"Theme · Ember").hasFocus());
+                activity.onBackPressed();
+                assertSame(originalBrowse,root());
+                assertNotEquals(aurora,ambientPixel(root()));
+            });
+            onMain(activity::finish);
+            open();
+            onMain(()->assertEquals(Glass.Theme.EMBER,activity.glass().theme()));
+        }finally{
+            onMain(()->{
+                android.content.SharedPreferences.Editor editor=app.settings.edit();
+                if(saved==null) editor.remove("theme"); else editor.putString("theme",saved);
+                editor.apply();
+            });
+        }
+    }
+
+    private static int ambientPixel(View view){
+        Bitmap pixel=Bitmap.createBitmap(1,1,Bitmap.Config.ARGB_8888);
+        try{
+            view.getBackground().draw(new Canvas(pixel));
+            return pixel.getPixel(0,0);
+        }finally{pixel.recycle();}
+    }
+
     private void capture(String name)throws Exception{i.waitForIdleSync();Thread.sleep(300);Bitmap image=i.getUiAutomation().takeScreenshot();assertNotNull(image);try(FileOutputStream out=new FileOutputStream(new File(app.getFilesDir(),name))){image.compress(Bitmap.CompressFormat.PNG,100,out);}finally{image.recycle();}}
 }

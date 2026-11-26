@@ -18,12 +18,74 @@ import java.util.concurrent.*;
 /** Shared glass material, ambient light and large-screen remote affordances. */
 public final class Glass {
     public static final int WHITE=0xfff4f8ff,MUTED=0xffaab9ce,MINT=0xffc0f4e1,BG=0xff080e1b;
+    public enum Theme {
+        AURORA("Aurora", "Teal and violet glass.", BG,
+                new int[]{0xff173d4d, 0xff332b58, 0xff103c3f},
+                new int[]{0xff203c4b, 0xff192239},
+                0xffd6ffef, 0xffb2e4d7,
+                new int[]{0xb052737d, 0xbd364559, 0xba293849},
+                new int[]{0xffd6fff0, 0xa0d3fff4, 0xffa6cfcf}, 0x0921ffbe),
+        MIDNIGHT("Midnight", "Charcoal glass with a soft silver highlight.", 0xff090b10,
+                new int[]{0xff252831, 0xff232437, 0xff191b25},
+                new int[]{0xff30343f, 0xff1e2029},
+                0xfff3f5ff, 0xffc6cede,
+                new int[]{0xb05d6473, 0xbd414753, 0xba303542},
+                new int[]{0xffedf1fb, 0xa0d3dbea, 0xffabb5c8}, 0x09e1e8ff),
+        EMBER("Ember", "Warm bronze and plum glass.", 0xff160d16,
+                new int[]{0xff513025, 0xff482341, 0xff452021},
+                new int[]{0xff4a302e, 0xff322235},
+                0xffffe3c3, 0xffefbe98,
+                new int[]{0xb07a5048, 0xbd60403d, 0xba442f3e},
+                new int[]{0xffffe3c3, 0xa0ffd2b3, 0xffdbac8c}, 0x09ffb773);
+
+        final String label, description;
+        final int background, highlight, highlightEnd, sheen;
+        final int[] glow, surface, focusFill, focusStroke;
+
+        Theme(String label, String description, int background, int[] glow, int[] surface,
+              int highlight, int highlightEnd, int[] focusFill, int[] focusStroke, int sheen) {
+            this.label=label;
+            this.description=description;
+            this.background=background;
+            this.glow=glow;
+            this.surface=surface;
+            this.highlight=highlight;
+            this.highlightEnd=highlightEnd;
+            this.focusFill=focusFill;
+            this.focusStroke=focusStroke;
+            this.sheen=sheen;
+        }
+
+        static Theme fromPreference(String name) {
+            for (Theme theme: values()) {
+                if (theme.name().equals(name)) return theme;
+            }
+            return AURORA;
+        }
+    }
+
     private static final ExecutorService IMAGES=Executors.newFixedThreadPool(4);
     private static final ExecutorService BACKDROPS=Executors.newFixedThreadPool(2);
     private static final Handler MAIN=new Handler(Looper.getMainLooper());
     private static final LruCache<String,Bitmap> CACHE=new LruCache<String,Bitmap>(24*1024*1024){@Override protected int sizeOf(String k,Bitmap b){return b.getByteCount();}};
     public final Activity activity;
     public final float scale;
+    private Theme theme=Theme.AURORA;
+
+    Theme theme(){return theme;}
+
+    void setTheme(Theme value, View root) {
+        theme=value;
+        if(root!=null) redraw(root);
+    }
+
+    private static void redraw(View view) {
+        view.invalidate();
+        if(view instanceof ViewGroup) {
+            ViewGroup group=(ViewGroup)view;
+            for(int i=0;i<group.getChildCount();i++) redraw(group.getChildAt(i));
+        }
+    }
     public Glass(Activity a){activity=a;scale=Math.min(a.getResources().getDisplayMetrics().widthPixels/1280f,a.getResources().getDisplayMetrics().heightPixels/720f);}
     public int u(float n){return Math.round(n*scale);}
     public TextView text(String value,float size,int color,boolean bold){
@@ -35,7 +97,7 @@ public final class Glass {
     public void at(FrameLayout parent,View child,float w,float h,float x,float y){FrameLayout.LayoutParams p=new FrameLayout.LayoutParams(w<0?(int)w:u(w),h<0?(int)h:u(h));p.leftMargin=u(x);p.topMargin=u(y);parent.addView(child,p);}
     public void pad(View v,int horizontal,int vertical){v.setPadding(u(horizontal),u(vertical),u(horizontal),u(vertical));}
     public Drawable panel(int radius,boolean active){return new Material(u(radius),active,false);}
-    public Drawable surface(int radius){GradientDrawable base=new GradientDrawable(GradientDrawable.Orientation.TL_BR,new int[]{0xff203c4b,0xff192239});base.setCornerRadius(u(radius));return new LayerDrawable(new Drawable[]{base,panel(radius,false)});}
+    public Drawable surface(int radius){GradientDrawable base=new GradientDrawable(GradientDrawable.Orientation.TL_BR,theme.surface);base.setCornerRadius(u(radius));return new LayerDrawable(new Drawable[]{base,panel(radius,false)});}
     public void notice(String message){GlassNotice.show(this,message);}
     public void material(View v,int radius){v.setBackground(panel(radius,false));v.setClipToOutline(true);}
     public TextView button(String label,boolean primary,Runnable action){
@@ -77,21 +139,21 @@ public final class Glass {
     }
     public View icon(String shape,int color,int size){if("logo".equals(shape)){ImageView logo=new ImageView(activity);logo.setImageResource(tv.luma.R.drawable.icon);logo.setLayoutParams(new LinearLayout.LayoutParams(u(size),u(size)));return logo;}Icon v=new Icon(activity,shape,color);v.setLayoutParams(new LinearLayout.LayoutParams(u(size),u(size)));return v;}
     public static void fullscreen(Activity a){a.getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_FULLSCREEN|View.SYSTEM_UI_FLAG_HIDE_NAVIGATION|View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY|View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN|View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION|View.SYSTEM_UI_FLAG_LAYOUT_STABLE);}
-    private static final class Ambient extends Drawable {
+    private final class Ambient extends Drawable {
         final Paint p=new Paint(Paint.ANTI_ALIAS_FLAG);
-        @Override public void draw(Canvas c){Rect b=getBounds();float w=b.width(),h=b.height();c.drawColor(BG);
-            glow(c,w*.07f,h*.48f,w*.65f,0xff173d4d);glow(c,w*.86f,h*.3f,w*.55f,0xff332b58);glow(c,w*.67f,h*1.08f,w*.55f,0xff103c3f);
-            p.setShader(new LinearGradient(0,0,w,h,new int[]{0x061fffff,0x001fffff,0x0921ffbe},null,Shader.TileMode.CLAMP));c.drawRect(b,p);p.setShader(null);
+        @Override public void draw(Canvas c){Rect b=getBounds();float w=b.width(),h=b.height();c.drawColor(theme.background);
+            glow(c,w*.07f,h*.48f,w*.65f,theme.glow[0]);glow(c,w*.86f,h*.3f,w*.55f,theme.glow[1]);glow(c,w*.67f,h*1.08f,w*.55f,theme.glow[2]);
+            p.setShader(new LinearGradient(0,0,w,h,new int[]{0x061fffff,0x001fffff,theme.sheen},null,Shader.TileMode.CLAMP));c.drawRect(b,p);p.setShader(null);
         }
         void glow(Canvas c,float x,float y,float radius,int color){p.setShader(new RadialGradient(x,y,radius,new int[]{color,Color.TRANSPARENT},null,Shader.TileMode.CLAMP));c.drawRect(getBounds(),p);}
         @Override public void setAlpha(int a){}@Override public void setColorFilter(ColorFilter f){}@Override public int getOpacity(){return PixelFormat.OPAQUE;}
     }
-    private static final class Material extends Drawable {
+    private final class Material extends Drawable {
         final Paint p=new Paint(Paint.ANTI_ALIAS_FLAG);final float radius;final boolean focus,primary;
         Material(float radius,boolean focus,boolean primary){this.radius=radius;this.focus=focus;this.primary=primary;}
         @Override public void draw(Canvas c){RectF r=new RectF(getBounds());r.inset(1.5f,1.5f);
-            p.setStyle(Paint.Style.FILL);p.setShader(new LinearGradient(r.left,r.top,r.right,r.bottom,primary?new int[]{0xffd6ffef,0xffb2e4d7}:focus?new int[]{0xb052737d,0xbd364559,0xba293849}:new int[]{0x75435168,0x78263549,0x851b2b3b},null,Shader.TileMode.CLAMP));c.drawRoundRect(r,radius,radius,p);p.setShader(null);
-            p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(focus?2.7f:1.3f);p.setShader(new LinearGradient(r.left,r.top,r.right,r.bottom,new int[]{focus?0xffd6fff0:0x60f0ffff,focus?0xa0d3fff4:0x12ffffff,focus?0xffa6cfcf:0x30ffffff},null,Shader.TileMode.CLAMP));c.drawRoundRect(r,radius,radius,p);p.setShader(null);p.setStyle(Paint.Style.FILL);
+            p.setStyle(Paint.Style.FILL);p.setShader(new LinearGradient(r.left,r.top,r.right,r.bottom,primary?new int[]{theme.highlight,theme.highlightEnd}:focus?theme.focusFill:new int[]{0x75435168,0x78263549,0x851b2b3b},null,Shader.TileMode.CLAMP));c.drawRoundRect(r,radius,radius,p);p.setShader(null);
+            p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(focus?2.7f:1.3f);p.setShader(new LinearGradient(r.left,r.top,r.right,r.bottom,focus?theme.focusStroke:new int[]{0x60f0ffff,0x12ffffff,0x30ffffff},null,Shader.TileMode.CLAMP));c.drawRoundRect(r,radius,radius,p);p.setShader(null);p.setStyle(Paint.Style.FILL);
         }
         @Override public void getOutline(Outline outline){outline.setRoundRect(getBounds(),radius);}
         @Override public void setAlpha(int a){}@Override public void setColorFilter(ColorFilter f){}@Override public int getOpacity(){return PixelFormat.TRANSLUCENT;}
