@@ -13,6 +13,7 @@ import androidx.media3.exoplayer.source.DefaultMediaSourceFactory;
 import androidx.media3.exoplayer.source.MediaSource;
 import androidx.media3.exoplayer.source.MergingMediaSource;
 import androidx.media3.exoplayer.source.SingleSampleMediaSource;
+import androidx.media3.ui.AspectRatioFrameLayout;
 import androidx.media3.ui.PlayerView;
 import org.json.*;
 import java.util.*;
@@ -20,6 +21,14 @@ import static tv.luma.Models.*;
 
 @androidx.annotation.OptIn(markerClass = androidx.media3.common.util.UnstableApi.class)
 public final class PlayerPanel {
+    private static final float[] PLAYBACK_SPEEDS={0.75f,1f,1.25f,1.5f,1.75f,2f};
+    private static final String[] SPEED_LABELS={"0.75×","1× (Normal)","1.25×","1.5×","1.75×","2×"};
+    private static final int[] PICTURE_MODES={
+        AspectRatioFrameLayout.RESIZE_MODE_FIT,
+        AspectRatioFrameLayout.RESIZE_MODE_ZOOM,
+        AspectRatioFrameLayout.RESIZE_MODE_FILL
+    };
+
     private final MainActivity activity;
     private boolean closed,mini,backgroundWasPlaying;
     private final List<Dialog> dialogs=new ArrayList<>();
@@ -48,7 +57,7 @@ public final class PlayerPanel {
         handler.postDelayed(this,1000);
     }};
     public PlayerPanel(MainActivity activity,Title title,String id,List<Stream> streams,int index){
-        this.activity=activity;app=(LumaApp)activity.getApplication();request=new PlayerActivity.Request(title,id,streams,index);app.playback=request;g=new Glass(activity);sourceIndex=index;
+        this.activity=activity;app=(LumaApp)activity.getApplication();request=new PlayerActivity.Request(title,id,streams,index);app.playback=request;g=activity.glass();sourceIndex=index;
         build();prepare(app.resume(title.id,id));loadSubtitles();handler.post(ticker);
     }
     public void setMini(boolean value){
@@ -56,17 +65,19 @@ public final class PlayerPanel {
         FrameLayout.LayoutParams p=value?new FrameLayout.LayoutParams(g.u(416),g.u(282)):new FrameLayout.LayoutParams(-1,-1);
         if(value){p.gravity=Gravity.BOTTOM|Gravity.RIGHT;p.rightMargin=g.u(30);p.bottomMargin=g.u(40);}
         root.setLayoutParams(p);root.setElevation(value?g.u(30):0);root.setClipToOutline(value);if(value)g.material(root,20);else root.setBackgroundColor(Color.BLACK);
-        FrameLayout.LayoutParams v=new FrameLayout.LayoutParams(-1,-1);v.bottomMargin=value?g.u(48):0;video.setLayoutParams(v);
+        FrameLayout.LayoutParams v=new FrameLayout.LayoutParams(-1,-1);v.bottomMargin=value?g.u(48):0;video.setLayoutParams(v);applyPictureMode();
         FrameLayout.LayoutParams st=new FrameLayout.LayoutParams(-1,g.u(value?50:72));st.gravity=Gravity.CENTER;status.setLayoutParams(st);status.setTextSize(android.util.TypedValue.COMPLEX_UNIT_PX,g.u(value?12:18));
         if(value)root.clearFocus();else showControls(true);
     }
     private void build(){
-        root=new FrameLayout(activity);root.setBackgroundColor(Color.BLACK);video=new PlayerView(activity);video.setUseController(false);video.setFocusable(false);video.setFocusableInTouchMode(false);video.setKeepScreenOn(true);root.setKeepScreenOn(true);root.addView(video,new FrameLayout.LayoutParams(-1,-1));
+        root=new FrameLayout(activity);root.setBackgroundColor(Color.BLACK);video=new PlayerView(activity);video.setUseController(false);video.setFocusable(false);video.setFocusableInTouchMode(false);video.setKeepScreenOn(true);root.setKeepScreenOn(true);root.addView(video,new FrameLayout.LayoutParams(-1,-1));applyPictureMode();
         top=new FrameLayout(activity);g.material(top,25);g.at(root,top,1168,76,56,35);
         TextView back=g.button("←",false,this::finish);back.setPadding(0,0,0,0);g.at(top,back,46,46,15,15);
         String title=request.title.name;String episode="";for(Video v:request.title.videos())if(v.id.equals(request.videoId)){episode="  ·  S"+v.season+" E"+v.episode;break;}
-        titleLabel=g.text(title+episode,20,Glass.WHITE,true);titleLabel.setMaxLines(1);titleLabel.setEllipsize(android.text.TextUtils.TruncateAt.END);g.at(top,titleLabel,780,30,80,12);
-        sourceLabel=g.text("",12,Glass.MUTED,false);g.at(top,sourceLabel,830,23,80,44);
+        titleLabel=g.text(title+episode,20,Glass.WHITE,true);titleLabel.setMaxLines(1);titleLabel.setEllipsize(android.text.TextUtils.TruncateAt.END);g.at(top,titleLabel,700,30,80,12);
+        sourceLabel=g.text("",12,Glass.MUTED,false);sourceLabel.setMaxLines(1);sourceLabel.setEllipsize(android.text.TextUtils.TruncateAt.END);g.at(top,sourceLabel,700,23,80,44);
+        TextView playback=g.button("Playback",false,this::playbackMenu);
+        g.at(top,playback,156,46,795,15);
         TextView miniButton=g.button("Mini player",false,activity::miniPlayer);g.at(top,miniButton,180,46,967,15);
         status=g.text("Opening your source…",18,Glass.MINT,true);status.setGravity(Gravity.CENTER);g.at(root,status,1020,72,130,305);
         controls=new FrameLayout(activity);g.material(controls,28);g.at(root,controls,1168,144,56,535);
@@ -105,7 +116,7 @@ public final class PlayerPanel {
         Stream stream=request.streams.get(sourceIndex);sourceLabel.setText(stream.provider+"  ·  "+stream.name.replace('\n',' '));status.setText("Opening your source…");status.setVisibility(View.VISIBLE);
         DefaultHttpDataSource.Factory http=new DefaultHttpDataSource.Factory().setUserAgent("LumaTV/0.3").setConnectTimeoutMs(12000).setReadTimeoutMs(15000).setAllowCrossProtocolRedirects(true).setDefaultRequestProperties(stream.headers);
         DefaultDataSource.Factory data=new DefaultDataSource.Factory(activity,http);
-        player=new ExoPlayer.Builder(activity).setMediaSourceFactory(new DefaultMediaSourceFactory(data)).build();player.setAudioAttributes(new AudioAttributes.Builder().setUsage(C.USAGE_MEDIA).setContentType(C.AUDIO_CONTENT_TYPE_MOVIE).build(),true);player.setHandleAudioBecomingNoisy(true);video.setPlayer(player);
+        player=new ExoPlayer.Builder(activity).setMediaSourceFactory(new DefaultMediaSourceFactory(data)).build();player.setAudioAttributes(new AudioAttributes.Builder().setUsage(C.USAGE_MEDIA).setContentType(C.AUDIO_CONTENT_TYPE_MOVIE).build(),true);player.setHandleAudioBecomingNoisy(true);video.setPlayer(player);applyPlaybackSpeed();
         TrackSelectionParameters prefs=player.getTrackSelectionParameters().buildUpon().setPreferredAudioLanguage(app.settings.getString("audioLanguage","en")).setPreferredTextLanguage(app.settings.getString("subtitleLanguage","en")).setTrackTypeDisabled(C.TRACK_TYPE_TEXT,!app.settings.getBoolean("subtitles",true)).build();player.setTrackSelectionParameters(prefs);
         player.addListener(new Player.Listener(){
             @Override public void onPlaybackStateChanged(int state){if(token!=serial)return;
@@ -149,6 +160,56 @@ public final class PlayerPanel {
             long position=player==null?0:player.getCurrentPosition();sourceIndex=index;prepare(position);delayHide();
         }));
     }
+    private void playbackMenu() {
+        if(liveType(request.title.type)) {
+            pictureMenu();
+            return;
+        }
+        show(GlassDialog.choices(g,"Playback","",new String[]{"Playback speed","Picture size"},-1,index->{
+            if(index==0) speedMenu(); else pictureMenu();
+        }));
+    }
+
+    private int speedChoice() {
+        int saved=app.settings.getInt("playbackSpeed",1);
+        return saved>=0&&saved<PLAYBACK_SPEEDS.length?saved:1;
+    }
+
+    private void applyPlaybackSpeed() {
+        if(player!=null) {
+            player.setPlaybackSpeed(liveType(request.title.type)?1f:PLAYBACK_SPEEDS[speedChoice()]);
+        }
+    }
+
+    private void speedMenu() {
+        show(GlassDialog.choices(g,"Playback speed","Luma remembers this speed for movies and episodes.",
+                SPEED_LABELS,speedChoice(),index->{
+                    app.settings.edit().putInt("playbackSpeed",index).apply();
+                    applyPlaybackSpeed();
+                }));
+    }
+
+    private int pictureChoice() {
+        int saved=app.settings.getInt("pictureSize",0);
+        return saved>=0&&saved<PICTURE_MODES.length?saved:0;
+    }
+
+    private void applyPictureMode() {
+        video.setResizeMode(PICTURE_MODES[mini?0:pictureChoice()]);
+    }
+
+    private void pictureMenu() {
+        List<GlassDialog.Choice> choices=Arrays.asList(
+                new GlassDialog.Choice("Fit","Keep the whole picture at its original proportions."),
+                new GlassDialog.Choice("Zoom","Fill the screen and crop the edges if needed."),
+                new GlassDialog.Choice("Stretch","Fill the screen by changing the picture proportions."));
+        show(GlassDialog.choices(g,"Picture size","Applies to the full-screen player.",choices,
+                pictureChoice(),index->{
+                    app.settings.edit().putInt("pictureSize",index).apply();
+                    applyPictureMode();
+                }));
+    }
+
     private void trackMenu(){
         show(GlassDialog.choices(g,"Audio & subtitles","Choose the audio or subtitle track for this video.",new String[]{"Audio tracks","Embedded subtitles","Add-on subtitles"},-1,index->{
             if(index==0)chooseTrack(C.TRACK_TYPE_AUDIO);else if(index==1)chooseTrack(C.TRACK_TYPE_TEXT);else chooseExternalSubtitle();

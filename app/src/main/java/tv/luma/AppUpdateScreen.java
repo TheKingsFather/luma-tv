@@ -24,7 +24,7 @@ final class AppUpdateScreen {
     private File staged;private AppUpdater.Release release;
     GlassDialog dialog;Installer installer;
     AppUpdateScreen(MainActivity owner,AppUpdater client){
-        this.owner=owner;this.client=client;app=(LumaApp)owner.getApplication();g=new Glass(owner);
+        this.owner=owner;this.client=client;app=(LumaApp)owner.getApplication();g=owner.glass();
         installer=new Installer(){
             public boolean allowed(){return owner.getPackageManager().canRequestPackageInstalls();}
             public void permission(){owner.startActivityForResult(UpdatePackage.permissionIntent(owner),PERMISSION);}
